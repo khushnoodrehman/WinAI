@@ -1,0 +1,654 @@
+<Page
+    x:Class="WinAI.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinAI.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <!-- Reusable Style for Section Headers -->
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{ThemeResource SystemControlForegroundAccentBrush}"/>
+            <Setter Property="Margin" Value="0,20,0,8"/>
+        </Style>
+
+        <!-- Provider Card Container Style -->
+        <Style x:Key="ProviderCardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAltHighBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseLowBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,12,12,10"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Header Area -->
+        <StackPanel Grid.Row="0" Margin="16,14,16,10">
+            <TextBlock Text="WINAI SETTINGS"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                       CharacterSpacing="120"/>
+
+            <TextBlock Text="API Keys"
+                       Style="{ThemeResource HeaderTextBlockStyle}"
+                       Margin="0,2,0,4"/>
+
+            <TextBlock Text="Configure personal API keys for your AI models. Keys remain stored securely on your device."
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                       TextWrapping="Wrap"/>
+
+            <!-- Status & Notification Banner -->
+            <Border x:Name="NotificationBanner"
+                    Visibility="Collapsed"
+                    Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                    Padding="12,8"
+                    Margin="0,10,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="&#xE73E;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="16"
+                               Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock x:Name="NotificationText"
+                               Text="All keys saved securely."
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Main Scrollable Content -->
+        <ScrollViewer Grid.Row="1"
+                      Padding="16,0,16,24"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="520" HorizontalAlignment="Stretch">
+
+                <!-- Security Note Card -->
+                <Border Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                        BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        Padding="12"
+                        Margin="0,4,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE72E;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Private &amp; Offline Storage"
+                                       Style="{ThemeResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="Your keys are saved exclusively in your Windows 10 Mobile LocalSettings storage and sent directly to provider endpoints."
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- SECTION 1: PRIMARY PROVIDERS -->
+                <TextBlock Text="PRIMARY PROVIDERS" Style="{StaticResource SectionHeaderStyle}"/>
+
+                <!-- OpenAI Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="OpenAI (ChatGPT &amp; DALL-E)"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports GPT-4o, GPT-4, and DALL-E 3 image generation"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="OpenAiStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="OpenAiKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="sk-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteOpenAi_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get OpenAI API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://platform.openai.com/api-keys"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Google Gemini Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Google Gemini"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports Gemini 1.5 Pro, Flash, and Vision multimodal"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="GeminiStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="GeminiKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="AIzaSy..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteGemini_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get Google Gemini API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://aistudio.google.com/app/apikey"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Anthropic Claude Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Anthropic Claude"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports Claude 3.5 Sonnet, Claude 3 Opus, and Haiku"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="ClaudeStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="ClaudeKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="sk-ant-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteClaude_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get Anthropic API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://console.anthropic.com/settings/keys"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- DeepSeek Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="DeepSeek"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports DeepSeek-V3 chat and DeepSeek-R1 reasoning"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="DeepSeekStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="DeepSeekKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="sk-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteDeepSeek_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get DeepSeek API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://platform.deepseek.com/api_keys"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- SECTION 2: ADDITIONAL AI PROVIDERS -->
+                <TextBlock Text="ADDITIONAL PROVIDERS" Style="{StaticResource SectionHeaderStyle}"/>
+
+                <!-- Perplexity Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Perplexity AI"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports Sonar, Sonar Pro, and real-time web search"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="PerplexityStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="PerplexityKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="pplx-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PastePerplexity_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get Perplexity API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://www.perplexity.ai/settings/api"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Groq Cloud Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Groq Cloud"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Ultra-fast Llama 3.3 70B &amp; Mixtral inference (LPU)"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="GroqStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="GroqKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="gsk_..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteGroq_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get Groq API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://console.groq.com/keys"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- OpenRouter Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="OpenRouter"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Single key access to 200+ proprietary and open-source models"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="OpenRouterStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="OpenRouterKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="sk-or-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteOpenRouter_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get OpenRouter API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://openrouter.ai/keys"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Mistral AI Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Mistral AI"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports Mistral Large, Pixtral, and Codestral"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="MistralStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="MistralKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="Enter Mistral key"
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteMistral_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get Mistral API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://console.mistral.ai/api-keys/"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- xAI (Grok) Card -->
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="xAI (Grok)"
+                                           FontWeight="SemiBold"
+                                           Style="{ThemeResource BaseTextBlockStyle}"/>
+                                <TextBlock Text="Supports Grok-2 and Grok-2 Vision"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="XAiStatusBadge"
+                                       Grid.Column="1"
+                                       Text="Not Set"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="XAiKeyBox"
+                                         Grid.Column="0"
+                                         PlaceholderText="xai-..."
+                                         PasswordChanged="KeyBox_PasswordChanged"/>
+                            <Button Grid.Column="1"
+                                    Margin="6,0,0,0"
+                                    Padding="10,0"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    ToolTipService.ToolTip="Paste from Clipboard"
+                                    Click="PasteXAi_Click">
+                                <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                        <HyperlinkButton Content="Get xAI API Key"
+                                         FontSize="12"
+                                         Margin="0,4,0,0"
+                                         Padding="0"
+                                         NavigateUri="https://console.x.ai/"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- SECTION 3: CUSTOM / SELF-HOSTED ENDPOINT -->
+                <TextBlock Text="CUSTOM / SELF-HOSTED (Ollama, LM Studio)" Style="{StaticResource SectionHeaderStyle}"/>
+
+                <Border Style="{StaticResource ProviderCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="Custom OpenAI-Compatible Endpoint"
+                                   FontWeight="SemiBold"
+                                   Style="{ThemeResource BaseTextBlockStyle}"/>
+                        <TextBlock Text="Connect to local Ollama, LM Studio, vLLM, or custom proxies"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Base URL"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Margin="0,0,0,2"/>
+                        <TextBox x:Name="CustomBaseUrlBox"
+                                 PlaceholderText="http://192.168.1.10:11434/v1"
+                                 Margin="0,0,0,8"
+                                 TextChanged="CustomBaseUrlBox_TextChanged"/>
+
+                        <TextBlock Text="API Key (optional for local models)"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Margin="0,0,0,2"/>
+                        <PasswordBox x:Name="CustomKeyBox"
+                                     PlaceholderText="Optional key or leave blank"
+                                     PasswordChanged="KeyBox_PasswordChanged"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Prominent Save Action Button (Windows 10 Mobile Accent Style) -->
+                <Button x:Name="SaveAccentButton"
+                        HorizontalAlignment="Stretch"
+                        Height="48"
+                        Margin="0,16,0,8"
+                        Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                        Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                        FontWeight="SemiBold"
+                        Click="SaveAll_Click">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE74E;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                        <TextBlock Text="Save API Keys"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Clear / Reset Keys Action -->
+                <Button Content="Clear All Stored Keys"
+                        HorizontalAlignment="Stretch"
+                        Height="38"
+                        Margin="0,0,0,24"
+                        Background="Transparent"
+                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                        BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        Click="ClearAll_Click"/>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+
+    <!-- Bottom CommandBar (Standard Windows 10 Mobile navigation & actions) -->
+    <Page.BottomAppBar>
+        <CommandBar ClosedDisplayMode="Compact">
+            <AppBarButton Icon="Save"
+                          Label="Save"
+                          Click="SaveAll_Click"/>
+            <AppBarButton Icon="Refresh"
+                          Label="Reload"
+                          Click="Reload_Click"/>
+
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Icon="Clear"
+                              Label="Clear all keys"
+                              Click="ClearAll_Click"/>
+                <AppBarButton Icon="Help"
+                              Label="About WinAI"
+                              Click="About_Click"/>
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
+    </Page.BottomAppBar>
+</Page>

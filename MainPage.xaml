@@ -1,0 +1,743 @@
+<Page
+    x:Class="WinAI.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinAI"
+    xmlns:models="using:WinAI.Models"
+    xmlns:common="using:WinAI.Common"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <!-- DataTemplate for User Messages (Right-aligned, System Accent Color) -->
+        <DataTemplate x:Key="UserMessageTemplate" x:DataType="models:ChatMessage">
+            <Grid HorizontalAlignment="Stretch" Margin="0,3,0,3">
+                <Border HorizontalAlignment="Right"
+                        Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                        CornerRadius="4"
+                        Padding="12,8,12,8"
+                        MaxWidth="300"
+                        Margin="48,0,0,0">
+                    <StackPanel>
+                        <!-- Attached Image preview in chat bubble -->
+                        <Image Source="{x:Bind ImageSource, Mode=OneWay}"
+                               Visibility="{x:Bind ImageVisibility, Mode=OneWay}"
+                               MaxHeight="220"
+                               MaxWidth="276"
+                               Stretch="Uniform"
+                               Margin="0,0,0,6"/>
+
+                        <TextBlock Text="{x:Bind Text}"
+                                   Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                   TextWrapping="Wrap"
+                                   FontSize="15"
+                                   IsTextSelectionEnabled="True"/>
+                        <TextBlock Text="{x:Bind FormattedTime}"
+                                   Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                   Opacity="0.75"
+                                   FontSize="11"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </DataTemplate>
+
+        <!-- DataTemplate for AI Responses (Left-aligned, Theme-Aware Gray with Markdown Rendering) -->
+        <DataTemplate x:Key="AiMessageTemplate" x:DataType="models:ChatMessage">
+            <Grid HorizontalAlignment="Stretch" Margin="0,3,0,3">
+                <Border HorizontalAlignment="Left"
+                        Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                        BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,8,12,8"
+                        MaxWidth="310"
+                        Margin="0,0,48,0">
+                    <StackPanel>
+                        <TextBlock Text="{x:Bind SenderName}"
+                                   Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Margin="0,0,0,4"/>
+                        <!-- Dynamic Markdown Rendering (Bold, Italic, Headings, Code Blocks) -->
+                        <RichTextBlock common:MarkdownRenderer.Markdown="{x:Bind Text}"
+                                       FontSize="15"
+                                       IsTextSelectionEnabled="True"
+                                       TextWrapping="Wrap"/>
+                        <TextBlock Text="{x:Bind FormattedTime}"
+                                   Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                   FontSize="11"
+                                   HorizontalAlignment="Left"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Template Selector -->
+        <common:ChatMessageTemplateSelector x:Key="MessageTemplateSelector"
+            UserMessageTemplate="{StaticResource UserMessageTemplate}"
+            AiMessageTemplate="{StaticResource AiMessageTemplate}"/>
+    </Page.Resources>
+
+    <Grid>
+        <!-- ============================================================ -->
+        <!-- VIEW 1: FIRST-RUN / NO KEYS CONFIGURED SCREEN                -->
+        <!-- ============================================================ -->
+        <Grid x:Name="SetupContainer" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Header -->
+            <StackPanel Grid.Row="0" Margin="16,14,16,10">
+                <TextBlock Text="WINDOWS 10 MOBILE"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                           CharacterSpacing="120"/>
+
+                <TextBlock Text="WinAI"
+                           Style="{ThemeResource HeaderTextBlockStyle}"
+                           Margin="0,2,0,4"/>
+
+                <TextBlock Text="Native Bring-Your-Own-Key (BYOK) AI Client"
+                           Style="{ThemeResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+            </StackPanel>
+
+            <!-- Setup Content -->
+            <ScrollViewer Grid.Row="1" Padding="16,4,16,24">
+                <StackPanel MaxWidth="520" HorizontalAlignment="Stretch">
+                    <!-- Setup Prompt Card -->
+                    <Border Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                            BorderBrush="{ThemeResource SystemControlForegroundAccentBrush}"
+                            BorderThickness="2"
+                            Padding="16"
+                            Margin="0,8,0,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="&#xE8D7;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="24"
+                                           Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <TextBlock Text="API Key Setup Required"
+                                           Style="{ThemeResource SubtitleTextBlockStyle}"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock Text="WinAI connects directly to official AI APIs using your personal API keys. Set up your OpenAI, Google Gemini, Anthropic Claude, or DeepSeek keys to begin chatting."
+                                       Style="{ThemeResource BodyTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,16"/>
+
+                            <Button Height="44"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                                    Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                    FontWeight="SemiBold"
+                                    Click="OpenSettings_Click">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE713;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                                    <TextBlock Text="Configure API Keys"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Information Card -->
+                    <Border Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            Padding="14"
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Supported AI Models"
+                                       FontWeight="SemiBold"
+                                       Style="{ThemeResource BaseTextBlockStyle}"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock Text="• OpenAI: GPT-4o, GPT-4, DALL-E 3&#x0a;• Google: Gemini 1.5 Pro &amp; Flash&#x0a;• Anthropic: Claude 3.5 Sonnet &amp; Opus&#x0a;• DeepSeek: V3 Chat &amp; R1 Reasoning&#x0a;• Perplexity: Sonar Web Search&#x0a;• Groq: Ultra-fast Llama 3.3&#x0a;• OpenRouter, Mistral, xAI &amp; Local Ollama"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       LineHeight="20"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 2: FULL CHAT VIEW WITH SPLITVIEW DRAWER                 -->
+        <!-- ============================================================ -->
+        <SplitView x:Name="ChatSplitView"
+                   DisplayMode="Overlay"
+                   PanePlacement="Left"
+                   OpenPaneLength="280"
+                   IsPaneOpen="False">
+
+            <!-- ==================== LEFT DRAWER PANE ==================== -->
+            <SplitView.Pane>
+                <Grid Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}">
+                    <Grid.RowDefinitions>
+                        <!-- Pane Header with "+ New Chat" -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Recent Chats List -->
+                        <RowDefinition Height="*"/>
+                        <!-- Pane Footer (Settings & Clear) -->
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Pane Header -->
+                    <StackPanel Grid.Row="0" Margin="14,14,14,8">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="CHATS"
+                                       Style="{ThemeResource SubtitleTextBlockStyle}"
+                                       FontWeight="Bold"
+                                       Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1"
+                                    Width="36"
+                                    Height="36"
+                                    Background="Transparent"
+                                    Click="CloseDrawer_Click"
+                                    ToolTipService.ToolTip="Close">
+                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
+                        </Grid>
+
+                        <Button HorizontalAlignment="Stretch"
+                                Height="40"
+                                Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                                Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                FontWeight="SemiBold"
+                                Click="NewChat_Click">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE710;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="New Chat" FontSize="14" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Recent Chats List -->
+                    <ScrollViewer Grid.Row="1" Padding="8,4">
+                        <StackPanel>
+                            <TextBlock Text="Recent Conversations"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       Margin="6,4,0,6"/>
+
+                            <ListView x:Name="RecentSessionsListView"
+                                      SelectionMode="None"
+                                      IsItemClickEnabled="True"
+                                      ItemClick="RecentSession_ItemClick">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ChatSession">
+                                        <Border Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                                                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                                                BorderThickness="1"
+                                                Padding="10,8"
+                                                Margin="0,2,0,4"
+                                                CornerRadius="4">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{x:Bind Title}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="13"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{x:Bind LastMessageSnippet}"
+                                                               FontSize="11"
+                                                               Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{x:Bind FormattedDate}"
+                                                               FontSize="10"
+                                                               Foreground="{ThemeResource SystemControlForegroundBaseLowBrush}"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1"
+                                                        Width="28"
+                                                        Height="28"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        Tag="{x:Bind Id}"
+                                                        Click="DeleteSession_Click"
+                                                        ToolTipService.ToolTip="Delete chat"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="&#xE74D;"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="12"
+                                                               Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Pane Footer -->
+                    <Border Grid.Row="2"
+                            BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="8,8">
+                        <StackPanel>
+                            <Button HorizontalAlignment="Stretch"
+                                    Height="36"
+                                    Margin="0,0,0,4"
+                                    Background="Transparent"
+                                    HorizontalContentAlignment="Left"
+                                    Click="OpenSettings_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE713;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0"/>
+                                    <TextBlock Text="Settings &amp; Keys"
+                                               FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button HorizontalAlignment="Stretch"
+                                    Height="36"
+                                    Background="Transparent"
+                                    HorizontalContentAlignment="Left"
+                                    Click="ClearAllHistory_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE74D;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0"/>
+                                    <TextBlock Text="Clear All History"
+                                               FontSize="13"
+                                               Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </SplitView.Pane>
+
+            <!-- ==================== MAIN CHAT CONTENT ==================== -->
+            <SplitView.Content>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Top Header with Hamburger -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Voice Status Banner (Listening...) -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Chat Message Feed -->
+                        <RowDefinition Height="*"/>
+                        <!-- Input Area with Model Selector & Mic -->
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 0: Top Header -->
+                    <Grid Grid.Row="0"
+                          Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                          BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                          BorderThickness="0,0,0,1"
+                          Padding="8,6,8,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Hamburger Button (Left-to-right drawer toggle) -->
+                        <Button x:Name="HamburgerButton"
+                                Grid.Column="0"
+                                Width="40"
+                                Height="40"
+                                Background="Transparent"
+                                Click="HamburgerButton_Click"
+                                ToolTipService.ToolTip="Recent Chats">
+                            <TextBlock Text="&#xE700;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"/>
+                        </Button>
+
+                        <!-- Chat Title in Center -->
+                        <StackPanel Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Margin="8,0,0,0">
+                            <TextBlock x:Name="CurrentChatTitleText"
+                                       Text="WinAI Chat"
+                                       Style="{ThemeResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="CurrentModelBadgeText"
+                                       Text="Loading model..."
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundAccentBrush}"/>
+                        </StackPanel>
+
+                        <!-- Right Actions: New Chat & Settings -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <Button Width="36"
+                                    Height="36"
+                                    Background="Transparent"
+                                    Click="NewChat_Click"
+                                    ToolTipService.ToolTip="New Chat">
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                            </Button>
+                            <Button Width="36"
+                                    Height="36"
+                                    Background="Transparent"
+                                    Click="OpenSettings_Click"
+                                    ToolTipService.ToolTip="Settings">
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Row 1: Voice Listening Status Banner -->
+                    <Border x:Name="VoiceStatusBanner"
+                            Grid.Row="1"
+                            Visibility="Collapsed"
+                            Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE720;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16"
+                                       Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="Listening... speak now"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Row 2: Scrollable Message Feed -->
+                    <Grid Grid.Row="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Empty State Placeholder -->
+                        <StackPanel x:Name="EmptyStatePanel"
+                                    Grid.Row="0"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    MaxWidth="300"
+                                    Margin="24,0">
+                            <TextBlock Text="&#xE8BD;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="44"
+                                       Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,10"/>
+                            <TextBlock Text="How can I help you?"
+                                       Style="{ThemeResource TitleTextBlockStyle}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Ask questions, generate ideas, or speak via the microphone below."
+                                       Style="{ThemeResource BodyTextBlockStyle}"
+                                       Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,14"/>
+
+                            <!-- Suggestion Chips -->
+                            <Button Content="💡 What can you do?"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,0,0,6"
+                                    Click="Suggestion_Click"/>
+                            <Button Content="📝 Write a creative story"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,0,0,6"
+                                    Click="Suggestion_Click"/>
+                            <Button Content="💻 Explain async/await in C#"
+                                    HorizontalAlignment="Stretch"
+                                    Click="Suggestion_Click"/>
+                        </StackPanel>
+
+                        <!-- ListView for Chat Messages -->
+                        <ListView x:Name="ChatListView"
+                                  Grid.Row="0"
+                                  ItemsSource="{x:Bind Messages}"
+                                  ItemTemplateSelector="{StaticResource MessageTemplateSelector}"
+                                  SelectionMode="None"
+                                  Padding="12,12,12,6">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0,2,0,2"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="MinHeight" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                        <!-- Typing / Progress Indicator Bubble -->
+                        <Border x:Name="TypingIndicatorBubble"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                HorizontalAlignment="Left"
+                                Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="12,8"
+                                Margin="12,0,48,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ProgressRing x:Name="TypingProgressRing"
+                                              IsActive="False"
+                                              Width="16"
+                                              Height="16"
+                                              Foreground="{ThemeResource SystemControlForegroundAccentBrush}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,10,0"/>
+                                <TextBlock x:Name="TypingIndicatorText"
+                                           Text="AI is thinking..."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Row 3: Bottom Input Area (Attachment Bar + Model Selector Bar + Input Row) -->
+                    <Grid Grid.Row="3"
+                          Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                          BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                          BorderThickness="0,1,0,0"
+                          Padding="10,6,10,8">
+                        <Grid.RowDefinitions>
+                            <!-- Attachment Preview Bar -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Model Selector Bar -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Input Box + Attach + Mic + Send -->
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Attachment Preview Bar (Above Input Box) -->
+                        <Border x:Name="AttachmentPreviewBar"
+                                Grid.Row="0"
+                                Visibility="Collapsed"
+                                Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="8,6"
+                                Margin="0,0,0,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Image x:Name="AttachmentThumbnailImage"
+                                       Grid.Column="0"
+                                       Width="44"
+                                       Height="44"
+                                       Stretch="UniformToFill"
+                                       Margin="0,0,10,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock x:Name="AttachmentFileNameText"
+                                               Text="Image Attached"
+                                               FontWeight="SemiBold"
+                                               FontSize="13"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="Ready for Vision Analysis"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2"
+                                        Width="32"
+                                        Height="32"
+                                        Background="Transparent"
+                                        Click="RemoveAttachment_Click"
+                                        ToolTipService.ToolTip="Remove attachment">
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Model Selector Bar (Compact, inside input area) -->
+                        <Grid Grid.Row="1" Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox x:Name="DynamicModelComboBox"
+                                      Grid.Column="0"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Select AI Model..."
+                                      Height="32"
+                                      FontSize="12"
+                                      SelectionChanged="DynamicModelComboBox_SelectionChanged">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:AiModelItem">
+                                        <TextBlock Text="{x:Bind FullDisplay}" FontSize="12"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Button x:Name="RefreshModelsButton"
+                                    Grid.Column="1"
+                                    Width="32"
+                                    Height="32"
+                                    Margin="6,0,0,0"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    Click="RefreshModelsButton_Click"
+                                    ToolTipService.ToolTip="Refresh models from APIs">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Input Controls Row -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Expanding Multi-line Text Box -->
+                            <TextBox x:Name="InputTextBox"
+                                     Grid.Column="0"
+                                     PlaceholderText="Type a message..."
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     MinHeight="40"
+                                     MaxHeight="120"
+                                     InputScope="Chat"
+                                     VerticalAlignment="Bottom"
+                                     TextChanged="InputTextBox_TextChanged"
+                                     KeyDown="InputTextBox_KeyDown"/>
+
+                            <!-- Attach Image (Paperclip) Button -->
+                            <Button x:Name="AttachButton"
+                                    Grid.Column="1"
+                                    Width="40"
+                                    Height="40"
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent"
+                                    BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                                    BorderThickness="1"
+                                    Click="AttachImage_Click"
+                                    ToolTipService.ToolTip="Attach image">
+                                <TextBlock Text="&#xE723;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}"/>
+                            </Button>
+
+                            <!-- Voice Input (Microphone) Button -->
+                            <Button x:Name="VoiceButton"
+                                    Grid.Column="2"
+                                    Width="40"
+                                    Height="40"
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent"
+                                    BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                                    BorderThickness="1"
+                                    Click="VoiceButton_Click"
+                                    ToolTipService.ToolTip="Voice typing">
+                                <TextBlock Text="&#xE720;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Foreground="{ThemeResource SystemControlForegroundAccentBrush}"/>
+                            </Button>
+
+                            <!-- Send Button -->
+                            <Button x:Name="SendButton"
+                                    Grid.Column="3"
+                                    Width="40"
+                                    Height="40"
+                                    Margin="6,0,0,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="{ThemeResource SystemControlBackgroundAccentBrush}"
+                                    Foreground="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                    IsEnabled="False"
+                                    Click="SendButton_Click"
+                                    ToolTipService.ToolTip="Send message">
+                                <TextBlock Text="&#xE724;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
+    </Grid>
+
+    <!-- Bottom CommandBar -->
+    <Page.BottomAppBar>
+        <CommandBar x:Name="MainCommandBar" ClosedDisplayMode="Compact">
+            <!-- Hamburger Menu Button -->
+            <AppBarButton Icon="List"
+                          Label="Chats"
+                          Click="HamburgerButton_Click"/>
+
+            <!-- Attach Image Button -->
+            <AppBarButton Icon="Attach"
+                          Label="Attach Image"
+                          Click="AttachImage_Click"/>
+
+            <!-- New Chat Button -->
+            <AppBarButton Icon="Add"
+                          Label="New Chat"
+                          Click="NewChat_Click"/>
+
+            <!-- Settings Button -->
+            <AppBarButton Icon="Setting"
+                          Label="Settings"
+                          Click="OpenSettings_Click"/>
+
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Icon="Delete"
+                              Label="Clear current chat"
+                              Click="ClearChat_Click"/>
+                <AppBarButton Icon="Copy"
+                              Label="Copy conversation"
+                              Click="CopyConversation_Click"/>
+                <AppBarButton Icon="Help"
+                              Label="About WinAI"
+                              Click="About_Click"/>
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
+    </Page.BottomAppBar>
+</Page>

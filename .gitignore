@@ -1,0 +1,37 @@
+# Visual Studio build artifacts
+[Bb]in/
+[Oo]bj/
+[Aa]pp[Pp]ackages/
+_UpgradeReport_Files/
+[Bb]uild/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Packages and package caches
+packages/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# UWP / AppX Package outputs
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.appxsym
+*.appxrecipe
+
+# Private signing keys (keep public .cer for sideloading, exclude .pfx)
+*.pfx
+
+# Temporary files and logs
+*.log
+*.tmp
+generate_cert.ps1
