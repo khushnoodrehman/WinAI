@@ -20,6 +20,7 @@
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
     <PackageCertificateKeyFile>WinAI_TemporaryKey.pfx</PackageCertificateKeyFile>
     <PackageCertificateThumbprint>F149023902A9A1920F91814159DFE1DC746F77F7</PackageCertificateThumbprint>
+    <PackageCertificatePassword>WinAI</PackageCertificatePassword>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -127,14 +128,80 @@
     <Compile Include="Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\KeyVaultPage.xaml.cs">
+      <DependentUpon>KeyVaultPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\HomePage.xaml.cs">
+      <DependentUpon>HomePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PromptKitPage.xaml.cs">
+      <DependentUpon>PromptKitPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PrivacyCenterPage.xaml.cs">
+      <DependentUpon>PrivacyCenterPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AboutPage.xaml.cs">
+      <DependentUpon>AboutPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ConversationsPage.xaml.cs">
+      <DependentUpon>ConversationsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ConversationRowItem.xaml.cs">
+      <DependentUpon>ConversationRowItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ProviderListItem.xaml.cs">
+      <DependentUpon>ProviderListItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ConversationListItem.xaml.cs">
+      <DependentUpon>ConversationListItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\VaultProviderItem.xaml.cs">
+      <DependentUpon>VaultProviderItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ProviderIcon.xaml.cs">
+      <DependentUpon>ProviderIcon.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ModelSwitcherRowItem.xaml.cs">
+      <DependentUpon>ModelSwitcherRowItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Services\CredentialVaultService.cs" />
     <Compile Include="Services\ApiKeyService.cs" />
     <Compile Include="Services\ChatHistoryService.cs" />
     <Compile Include="Services\ModelService.cs" />
     <Compile Include="Services\VoiceService.cs" />
     <Compile Include="Services\AiChatService.cs" />
+    <Compile Include="Services\ThemeService.cs" />
     <Compile Include="Models\ChatMessage.cs" />
     <Compile Include="Models\ChatSession.cs" />
     <Compile Include="Models\AiModelItem.cs" />
+    <Compile Include="Models\AIProvider.cs" />
+    <Compile Include="Models\ModelCapabilities.cs" />
+    <Compile Include="Models\AiModelDescriptor.cs" />
+    <Compile Include="Models\Conversation.cs" />
+    <Compile Include="Services\Providers\IAiProvider.cs" />
+    <Compile Include="Services\Providers\BaseAiProvider.cs" />
+    <Compile Include="Services\Providers\OpenAiProvider.cs" />
+    <Compile Include="Services\Providers\GeminiProvider.cs" />
+    <Compile Include="Services\Providers\ClaudeProvider.cs" />
+    <Compile Include="Services\Providers\DeepSeekProvider.cs" />
+    <Compile Include="Services\Providers\GrokProvider.cs" />
+    <Compile Include="Services\Providers\PerplexityProvider.cs" />
+    <Compile Include="Services\Providers\AiProviderRegistry.cs" />
+    <Compile Include="Data\Models\MessageRole.cs" />
+    <Compile Include="Data\Models\ConversationEntity.cs" />
+    <Compile Include="Data\Models\MessageEntity.cs" />
+    <Compile Include="Data\Database\WinAIDatabase.cs" />
+    <Compile Include="Data\Database\DatabaseMigrations.cs" />
+    <Compile Include="Data\Database\DatabaseInitializer.cs" />
+    <Compile Include="Data\Repositories\IConversationRepository.cs" />
+    <Compile Include="Data\Repositories\ConversationRepository.cs" />
+    <Compile Include="Data\Repositories\IMessageRepository.cs" />
+    <Compile Include="Data\Repositories\MessageRepository.cs" />
+    <Compile Include="Data\Services\ConversationService.cs" />
+    <Compile Include="Data\Services\IConversationContextBuilder.cs" />
+    <Compile Include="Data\Services\ConversationContextBuilder.cs" />
+    <Compile Include="Data\Tests\ConversationDatabaseTests.cs" />
+    <Compile Include="Data\Tests\ModelSwitcherArchitectureTests.cs" />
     <Compile Include="Common\ChatMessageTemplateSelector.cs" />
     <Compile Include="Common\MarkdownRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -161,11 +228,63 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="Resources\ThemeResources.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ProviderListItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ConversationListItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\VaultProviderItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ProviderIcon.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ModelSwitcherRowItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\HomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\SettingsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\KeyVaultPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\PromptKitPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\PrivacyCenterPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\AboutPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ConversationsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ConversationRowItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

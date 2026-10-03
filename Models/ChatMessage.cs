@@ -154,16 +154,22 @@ namespace WinAI.Models
 
         public string FormattedTime => Timestamp.ToString("t");
 
+        public string ProviderId { get; set; }
+        public string ModelId { get; set; }
+        public bool IsSystemNotification { get; set; }
+
         public ChatMessage()
         {
             Timestamp = DateTime.Now;
         }
 
-        public ChatMessage(string text, bool isUser, string senderName = null)
+        public ChatMessage(string text, bool isUser, string senderName = null, string providerId = null, string modelId = null)
         {
             Text = text;
             IsUser = isUser;
             SenderName = senderName ?? (isUser ? "You" : "WinAI");
+            ProviderId = providerId;
+            ModelId = modelId;
             Timestamp = DateTime.Now;
         }
 

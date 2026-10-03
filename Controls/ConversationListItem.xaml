@@ -1,0 +1,57 @@
+<UserControl
+    x:Class="WinAI.Controls.ConversationListItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinAI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          Padding="14,12"
+          PointerEntered="RootGrid_PointerEntered"
+          PointerExited="RootGrid_PointerExited"
+          Tapped="RootGrid_Tapped">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Message outline icon -->
+        <TextBlock Grid.Column="0"
+                   Text="&#xE8BD;"
+                   FontFamily="Segoe MDL2 Assets"
+                   FontSize="17"
+                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                   VerticalAlignment="Center"
+                   Margin="2,0,16,0" />
+
+        <!-- Title & Timestamp -->
+        <StackPanel Grid.Column="1"
+                    VerticalAlignment="Center">
+            <TextBlock x:Name="TitleText"
+                       Text="Conversation Title"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="TimeAgoText"
+                       Text="2 hours ago"
+                       FontSize="12"
+                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                       Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Right Chevron -->
+        <TextBlock Grid.Column="2"
+                   Text="&#xE76C;"
+                   FontFamily="Segoe MDL2 Assets"
+                   FontSize="12"
+                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                   VerticalAlignment="Center"
+                   Margin="4,0,2,0" />
+    </Grid>
+</UserControl>

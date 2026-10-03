@@ -12,6 +12,27 @@ namespace WinAI.Models
 
         public string FullDisplay => $"{DisplayName} ({ProviderName})";
 
+        public AiModelItem() { }
+
+        public AiModelItem(string id, string displayName, string providerName, string description = null)
+        {
+            Id = id;
+            DisplayName = displayName;
+            ProviderName = providerName;
+            Description = description;
+        }
+
+        public AiModelDescriptor ToDescriptor(string providerId = null)
+        {
+            return new AiModelDescriptor(
+                id: Id,
+                displayName: DisplayName,
+                providerId: providerId ?? ProviderName?.ToLowerInvariant() ?? "openai",
+                providerName: ProviderName ?? "OpenAI",
+                description: Description
+            );
+        }
+
         public override string ToString() => FullDisplay;
     }
 }

@@ -1,0 +1,104 @@
+<UserControl
+    x:Class="WinAI.Controls.ModelSwitcherRowItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:WinAI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          Padding="14,10,14,10"
+          MinHeight="50"
+          PointerEntered="RootGrid_PointerEntered"
+          PointerExited="RootGrid_PointerExited"
+          Tapped="RootGrid_Tapped">
+
+        <Grid.ColumnDefinitions>
+            <!-- Column 0: Provider Icon -->
+            <ColumnDefinition Width="Auto"/>
+            <!-- Column 1: Model Name, Provider Name, Capabilities / Warning -->
+            <ColumnDefinition Width="*"/>
+            <!-- Column 2: Selection / Status Indicator -->
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Provider Icon -->
+        <controls:ProviderIcon x:Name="ItemProviderIcon"
+                               Grid.Column="0"
+                               IconSize="32"
+                               BadgeCornerRadius="7"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0"/>
+
+        <!-- Model Info -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <!-- Model Display Name -->
+            <TextBlock x:Name="ModelNameText"
+                       Text="GPT-4o"
+                       FontSize="14.5"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                       TextTrimming="CharacterEllipsis"/>
+
+            <!-- Secondary Text: Provider Name & Capabilities -->
+            <StackPanel x:Name="InfoPanel" Orientation="Horizontal" Margin="0,2,0,0">
+                <TextBlock x:Name="ProviderNameText"
+                           Text="OpenAI"
+                           FontSize="12"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"/>
+                <TextBlock x:Name="BulletSeparator"
+                           Text=" • "
+                           FontSize="11"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                           Opacity="0.6"/>
+                <TextBlock x:Name="CapabilitiesText"
+                           Text="Text, Vision"
+                           FontSize="11.5"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                           Opacity="0.8"/>
+            </StackPanel>
+
+            <!-- Unconfigured Warning: "API key required" -->
+            <TextBlock x:Name="UnconfiguredWarningText"
+                       Text="API key required"
+                       FontSize="11.5"
+                       Foreground="{ThemeResource AppAccentBrush}"
+                       Visibility="Collapsed"
+                       Margin="0,2,0,0"/>
+        </StackPanel>
+
+        <!-- Selection / Status Indicator -->
+        <Grid Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0">
+            <!-- Selected Active Dot ● (Windows Blue) -->
+            <TextBlock x:Name="SelectedIndicator"
+                       Text="&#xE73B;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="13"
+                       Foreground="{ThemeResource AppAccentBrush}"
+                       VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+
+            <!-- Unselected Available Circle ○ -->
+            <TextBlock x:Name="UnselectedIndicator"
+                       Text="&#xEA3B;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="13"
+                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                       Opacity="0.45"
+                       VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+
+            <!-- Key / Configure Icon for Unconfigured Models -->
+            <TextBlock x:Name="KeyRequiredIndicator"
+                       Text="&#xE8D7;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="13"
+                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                       Opacity="0.6"
+                       VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</UserControl>

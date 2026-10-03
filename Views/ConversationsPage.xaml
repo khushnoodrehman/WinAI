@@ -1,0 +1,646 @@
+<Page
+    x:Class="WinAI.Views.ConversationsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:WinAI.Controls"
+    xmlns:models="using:WinAI.Models"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource AppPageBackgroundBrush}">
+
+    <Grid>
+        <!-- Overlay SplitView for Navigation Drawer -->
+        <SplitView x:Name="NavDrawer"
+                   DisplayMode="Overlay"
+                   PanePlacement="Left"
+                   OpenPaneLength="310"
+                   LightDismissOverlayMode="On"
+                   PaneBackground="{ThemeResource AppDrawerBackgroundBrush}"
+                   IsPaneOpen="False">
+
+            <!-- ==================== LEFT DRAWER PANE ==================== -->
+            <SplitView.Pane>
+                <Grid Background="{ThemeResource AppDrawerBackgroundBrush}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Padding="0,32,0,32">
+                            <!-- Drawer Header -->
+                            <StackPanel Margin="24,0,16,28">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Win"
+                                               FontSize="28"
+                                               FontWeight="SemiBold"
+                                               FontFamily="Segoe UI"
+                                               Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                    <TextBlock Text="AI"
+                                               FontSize="28"
+                                               FontWeight="SemiBold"
+                                               FontFamily="Segoe UI"
+                                               Foreground="{ThemeResource AppAccentBrush}" />
+                                </StackPanel>
+                                <TextBlock Text="Your AI. Your Keys. Your Device."
+                                           FontSize="13"
+                                           FontFamily="Segoe UI"
+                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                            </StackPanel>
+
+                            <!-- Primary Menu Items -->
+                            <!-- 1. Home -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerHome_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE80F;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Home"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 2. New Chat -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerNewChat_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE15F;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="New Chat"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 3. Conversations (SELECTED in Conversations view) -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerConversations_Click">
+                                <Grid Background="{ThemeResource AppDrawerSelectedBrush}" Height="48">
+                                    <Border Width="3.5"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Stretch"
+                                            Background="{ThemeResource AppAccentBrush}" />
+
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE8FD;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppAccentBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Conversations"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 4. AI Providers -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerProviders_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE80A;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="AI Providers"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 5. Key Vault -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerVault_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE72E;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Key Vault"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 6. Prompt Kit -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerPromptKit_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE7C3;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Prompt Kit"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- Section Separator -->
+                            <Border Height="1"
+                                    Background="{ThemeResource AppDrawerDividerBrush}"
+                                    Margin="24,14,24,14" />
+
+                            <!-- Secondary Menu Items -->
+                            <!-- 7. Settings -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerSettings_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE713;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Settings"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 8. Privacy Center -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerPrivacy_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xEA18;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Privacy Center"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <!-- 9. About WinAI -->
+                            <Button Style="{StaticResource DrawerItemButtonStyle}"
+                                    Click="DrawerAbout_Click">
+                                <Grid Background="Transparent" Height="48">
+                                    <StackPanel Orientation="Horizontal" Margin="24,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE946;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Width="24"
+                                                   TextAlignment="Center"
+                                                   Foreground="{ThemeResource AppDrawerIconBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="About WinAI"
+                                                   FontSize="15"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   Margin="16,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </SplitView.Pane>
+
+            <!-- ==================== MAIN CONTENT AREA ==================== -->
+            <SplitView.Content>
+                <Grid Background="{ThemeResource AppPageBackgroundBrush}">
+                    <Grid.RowDefinitions>
+                        <!-- Row 0: Top App Bar -->
+                        <RowDefinition Height="54" />
+                        <!-- Row 1: Header, Search & Filter Bar -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Row 2: Conversation List -->
+                        <RowDefinition Height="*" />
+                        <!-- Row 3: Bottom Navigation Bar -->
+                        <RowDefinition Height="56" />
+                    </Grid.RowDefinitions>
+
+                    <!-- ==================== ROW 0: TOP APP BAR ==================== -->
+                    <Grid Grid.Row="0"
+                          Background="{ThemeResource AppTopBarBackgroundBrush}"
+                          BorderBrush="{ThemeResource AppDividerBrush}"
+                          BorderThickness="0,0,0,1"
+                          Padding="10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Hamburger + WinAI Title -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Width="40"
+                                    Height="40"
+                                    Background="Transparent"
+                                    Click="Hamburger_Click"
+                                    Margin="0,0,6,0">
+                                <TextBlock Text="&#xE700;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="17"
+                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                            </Button>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,0,0">
+                                <TextBlock Text="Win"
+                                           FontSize="21"
+                                           FontWeight="SemiBold"
+                                           FontFamily="Segoe UI"
+                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                <TextBlock Text="AI"
+                                           FontSize="21"
+                                           FontWeight="SemiBold"
+                                           FontFamily="Segoe UI"
+                                           Foreground="{ThemeResource AppAccentBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Right: Plus Button (New Conversation) -->
+                        <Button Grid.Column="1"
+                                Width="40"
+                                Height="40"
+                                Background="Transparent"
+                                Click="NewConversation_Click"
+                                ToolTipService.ToolTip="New Conversation">
+                            <TextBlock Text="&#xE710;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                        </Button>
+                    </Grid>
+
+                    <!-- ==================== ROW 1: HEADER, SEARCH & FILTER ==================== -->
+                    <StackPanel Grid.Row="1">
+                        <!-- Page Title: "Conversations" -->
+                        <TextBlock Text="Conversations"
+                                   FontSize="28"
+                                   FontFamily="Segoe UI"
+                                   FontWeight="Normal"
+                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                   Margin="18,14,18,12" />
+
+                        <!-- Search Field -->
+                        <Border Height="38"
+                                Margin="18,0,18,12"
+                                CornerRadius="6"
+                                Background="{ThemeResource AppInputPillBrush}"
+                                BorderBrush="{ThemeResource AppInputPillBorderBrush}"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Magnifying Glass Icon -->
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE721;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                           Margin="12,0,8,0"
+                                           VerticalAlignment="Center" />
+
+                                <!-- Search Input Box -->
+                                <TextBox Grid.Column="1"
+                                         x:Name="SearchBox"
+                                         PlaceholderText="Search conversations..."
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                         FontSize="13.5"
+                                         VerticalAlignment="Center"
+                                         Padding="0,2,8,2"
+                                         TextChanged="SearchBox_TextChanged" />
+
+                                <!-- Clear Button (visible when text is present) -->
+                                <Button Grid.Column="2"
+                                        x:Name="ClearSearchBtn"
+                                        Width="30"
+                                        Height="30"
+                                        Background="Transparent"
+                                        Padding="0"
+                                        Visibility="Collapsed"
+                                        Click="ClearSearch_Click">
+                                    <TextBlock Text="&#xE711;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Filter Bar -->
+                        <Grid Margin="18,0,18,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Filters: All, Today, This Week, Pinned -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <!-- All -->
+                                <Border x:Name="FilterAllBorder"
+                                        Height="30"
+                                        Padding="14,0"
+                                        Margin="0,0,7,0"
+                                        CornerRadius="6"
+                                        Background="{ThemeResource AppAccentBrush}"
+                                        Tapped="Filter_Tapped"
+                                        Tag="all">
+                                    <TextBlock x:Name="FilterAllText"
+                                               Text="All"
+                                               FontSize="12.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Center" />
+                                </Border>
+
+                                <!-- Today -->
+                                <Border x:Name="FilterTodayBorder"
+                                        Height="30"
+                                        Padding="14,0"
+                                        Margin="0,0,7,0"
+                                        CornerRadius="6"
+                                        Background="{ThemeResource AppSurfaceBrush}"
+                                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        Tapped="Filter_Tapped"
+                                        Tag="today">
+                                    <TextBlock x:Name="FilterTodayText"
+                                               Text="Today"
+                                               FontSize="12.5"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Center" />
+                                </Border>
+
+                                <!-- This Week -->
+                                <Border x:Name="FilterWeekBorder"
+                                        Height="30"
+                                        Padding="14,0"
+                                        Margin="0,0,7,0"
+                                        CornerRadius="6"
+                                        Background="{ThemeResource AppSurfaceBrush}"
+                                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        Tapped="Filter_Tapped"
+                                        Tag="week">
+                                    <TextBlock x:Name="FilterWeekText"
+                                               Text="This Week"
+                                               FontSize="12.5"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Center" />
+                                </Border>
+
+                                <!-- Pinned -->
+                                <Border x:Name="FilterPinnedBorder"
+                                        Height="30"
+                                        Padding="14,0"
+                                        CornerRadius="6"
+                                        Background="{ThemeResource AppSurfaceBrush}"
+                                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        Tapped="Filter_Tapped"
+                                        Tag="pinned">
+                                    <TextBlock x:Name="FilterPinnedText"
+                                               Text="Pinned"
+                                               FontSize="12.5"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Center" />
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Sort Button -->
+                            <Button Grid.Column="1"
+                                    Width="32"
+                                    Height="30"
+                                    Background="Transparent"
+                                    Padding="0">
+                                <TextBlock Text="&#xE8CB;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="15"
+                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="Newest first" Click="SortNewest_Click" />
+                                        <MenuFlyoutItem Text="Oldest first" Click="SortOldest_Click" />
+                                        <MenuFlyoutItem Text="Alphabetical (A to Z)" Click="SortAlpha_Click" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- ==================== ROW 2: CONVERSATIONS LIST ==================== -->
+                    <Grid Grid.Row="2">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="ConversationsContainer" Padding="0,0,0,16" />
+                        </ScrollViewer>
+
+                        <!-- Empty State Panel -->
+                        <StackPanel x:Name="EmptyStatePanel"
+                                    Visibility="Collapsed"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="24,40,24,0">
+                            <TextBlock Text="&#xE8BD;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="36"
+                                       Foreground="{ThemeResource AppTextMutedBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,12" />
+                            <TextBlock x:Name="EmptyStateTitleText"
+                                       Text="No conversations yet"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock x:Name="EmptyStateSubText"
+                                       Text="Tap + above to start a new chat"
+                                       FontSize="13"
+                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,16" />
+                            <Button Content="Start a new conversation"
+                                    Background="{ThemeResource AppAccentBrush}"
+                                    Foreground="White"
+                                    Padding="16,8"
+                                    HorizontalAlignment="Center"
+                                    Click="NewConversation_Click" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ==================== ROW 3: BOTTOM NAVIGATION BAR ==================== -->
+                    <Border Grid.Row="3"
+                            Height="56"
+                            Background="{ThemeResource AppBottomNavBackgroundBrush}"
+                            BorderBrush="{ThemeResource AppBottomNavBorderBrush}"
+                            BorderThickness="0,1,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Tab 1: Home -->
+                            <Button Grid.Column="0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    Padding="0"
+                                    Click="BottomHome_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE80F;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="16"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="Home"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,2,0,4" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab 2: Chats (SELECTED ACTIVE) -->
+                            <Button Grid.Column="1"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    Padding="0">
+                                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE8BD;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="16"
+                                                   Foreground="{ThemeResource AppAccentBrush}"
+                                                   HorizontalAlignment="Center" />
+                                        <TextBlock Text="Chats"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource AppAccentBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="0,2,0,4" />
+                                    </StackPanel>
+                                    <!-- Blue bottom selection indicator bar -->
+                                    <Border Height="2.5"
+                                            VerticalAlignment="Bottom"
+                                            HorizontalAlignment="Center"
+                                            Width="38"
+                                            Background="{ThemeResource AppAccentBrush}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Tab 3: Vault -->
+                            <Button Grid.Column="2"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    Padding="0"
+                                    Click="BottomVault_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE72E;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="16"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="Vault"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,2,0,4" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab 4: More -->
+                            <Button Grid.Column="3"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    Padding="0"
+                                    Click="BottomMore_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE700;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="16"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="More"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,2,0,4" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
+    </Grid>
+</Page>

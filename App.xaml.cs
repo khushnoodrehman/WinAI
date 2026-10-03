@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -66,7 +66,9 @@ namespace WinAI
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    WinAI.Services.ThemeService.Instance.ApplyTheme(rootFrame);
+                    _ = WinAI.Data.Database.DatabaseInitializer.InitializeAsync();
+                    rootFrame.Navigate(typeof(WinAI.Views.HomePage), e.Arguments);
                 }
                 // Ensure the current window is active
                 Window.Current.Activate();

@@ -109,6 +109,13 @@ namespace WinAI.Services
 
         private string GetValue(string key)
         {
+            string providerId = MapSettingKeyToProviderId(key);
+            if (!string.IsNullOrEmpty(providerId))
+            {
+                string vaultVal = CredentialVaultService.Instance.GetKey(providerId);
+                if (!string.IsNullOrEmpty(vaultVal)) return vaultVal;
+            }
+
             if (_settings.Values.TryGetValue(key, out object value) && value is string strVal)
             {
                 return strVal;
@@ -119,6 +126,20 @@ namespace WinAI.Services
         private void SetValue(string key, string value)
         {
             string sanitized = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            string providerId = MapSettingKeyToProviderId(key);
+
+            if (!string.IsNullOrEmpty(providerId))
+            {
+                if (string.IsNullOrEmpty(sanitized))
+                {
+                    CredentialVaultService.Instance.RemoveKey(providerId);
+                }
+                else
+                {
+                    CredentialVaultService.Instance.SaveKey(providerId, sanitized);
+                }
+            }
+
             if (string.IsNullOrEmpty(sanitized))
             {
                 if (_settings.Values.ContainsKey(key))
@@ -129,6 +150,24 @@ namespace WinAI.Services
             else
             {
                 _settings.Values[key] = sanitized;
+            }
+        }
+
+        private string MapSettingKeyToProviderId(string key)
+        {
+            switch (key)
+            {
+                case KeyOpenAI: return "openai";
+                case KeyGemini: return "gemini";
+                case KeyClaude: return "claude";
+                case KeyDeepSeek: return "deepseek";
+                case KeyPerplexity: return "perplexity";
+                case KeyGroq: return "groq";
+                case KeyOpenRouter: return "openrouter";
+                case KeyMistral: return "mistral";
+                case KeyXAI: return "xai";
+                case KeyCustomKey: return "custom";
+                default: return null;
             }
         }
 

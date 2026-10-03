@@ -1,0 +1,123 @@
+<UserControl
+    x:Class="WinAI.Controls.ConversationRowItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          PointerEntered="RootGrid_PointerEntered"
+          PointerExited="RootGrid_PointerExited"
+          Tapped="RootGrid_Tapped">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="1" />
+        </Grid.RowDefinitions>
+
+        <!-- Main Item Row -->
+        <Grid Grid.Row="0" Padding="18,12,18,12">
+            <Grid.ColumnDefinitions>
+                <!-- Column 0: Provider Icon -->
+                <ColumnDefinition Width="Auto" />
+                <!-- Column 1: Title, Preview, Model -->
+                <ColumnDefinition Width="*" />
+                <!-- Column 2: Time & Overflow Menu -->
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Brand Icon Box -->
+            <Border Grid.Column="0"
+                    x:Name="IconBorder"
+                    Width="40"
+                    Height="40"
+                    CornerRadius="8"
+                    VerticalAlignment="Center"
+                    Margin="0,0,14,0">
+                <ContentControl x:Name="IconContentPresenter"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" />
+            </Border>
+
+            <!-- Title & Messages -->
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Margin="0,0,10,0">
+                <!-- Title Row (with optional Pin icon) -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="PinIcon"
+                               Text="&#xE718;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="11"
+                               Foreground="{ThemeResource AppAccentBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,5,0"
+                               Visibility="Collapsed" />
+                    <TextBlock x:Name="TitleText"
+                               Text="Conversation Title"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource AppTextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Message Preview -->
+                <TextBlock x:Name="PreviewText"
+                           Text="Last message preview..."
+                           FontSize="12.5"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,2,0,2" />
+
+                <!-- Provider / Model Name -->
+                <TextBlock x:Name="ModelText"
+                           Text="GPT-4o"
+                           FontSize="11"
+                           Foreground="{ThemeResource AppTextMutedBrush}" />
+            </StackPanel>
+
+            <!-- Time & More Actions -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Top"
+                        Margin="0,2,0,0">
+                <TextBlock x:Name="TimeAgoText"
+                           Text="2 hours ago"
+                           FontSize="11.5"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0" />
+
+                <!-- Three-Dot Overflow Menu Button -->
+                <Button x:Name="MoreButton"
+                        Width="28"
+                        Height="28"
+                        Background="Transparent"
+                        Padding="0"
+                        Click="MoreButton_Click">
+                    <TextBlock Text="&#xE712;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="13"
+                               Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Open" Click="MenuOpen_Click" />
+                            <MenuFlyoutItem Text="Rename" Click="MenuRename_Click" />
+                            <MenuFlyoutItem x:Name="PinMenuItem" Text="Pin" Click="MenuPin_Click" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem Text="Delete" Foreground="#E04040" Click="MenuDelete_Click" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Subtle Separator (aligned with text content) -->
+        <Border Grid.Row="1"
+                Background="{ThemeResource AppDividerBrush}"
+                Margin="72,0,0,0" />
+    </Grid>
+</UserControl>

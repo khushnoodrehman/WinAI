@@ -1,0 +1,60 @@
+<UserControl
+    x:Class="WinAI.Controls.ProviderListItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinAI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          Padding="14,11"
+          PointerEntered="RootGrid_PointerEntered"
+          PointerExited="RootGrid_PointerExited"
+          Tapped="RootGrid_Tapped">
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Brand Icon Box -->
+        <Border Grid.Column="0"
+                x:Name="IconBorder"
+                Width="38"
+                Height="38"
+                CornerRadius="8"
+                VerticalAlignment="Center"
+                Margin="0,0,14,0">
+            <ContentControl x:Name="IconContentPresenter"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" />
+        </Border>
+
+        <!-- Name & Selected Model -->
+        <StackPanel Grid.Column="1"
+                    VerticalAlignment="Center">
+            <TextBlock x:Name="ProviderNameText"
+                       Text="Provider Name"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
+            <TextBlock x:Name="ModelNameText"
+                       Text="Model Name"
+                       FontSize="12"
+                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                       Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Right Chevron -->
+        <TextBlock Grid.Column="2"
+                   Text="&#xE76C;"
+                   FontFamily="Segoe MDL2 Assets"
+                   FontSize="12"
+                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                   VerticalAlignment="Center"
+                   Margin="4,0,2,0" />
+    </Grid>
+</UserControl>

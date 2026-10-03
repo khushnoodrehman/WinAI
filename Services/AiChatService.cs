@@ -4,11 +4,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Networking.Connectivity;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WinAI.Models;
+using WinAI.Services.Providers;
 
 namespace WinAI.Services
 {
@@ -43,6 +45,32 @@ namespace WinAI.Services
             {
                 return true; // Assume true if check fails to prevent blocking on custom networks
             }
+        }
+
+        public async Task<string> SendMessageAsync(AiModelDescriptor model, List<ChatMessage> conversationHistory)
+        {
+            if (model == null)
+            {
+                throw new InvalidOperationException("No AI model is currently selected.");
+            }
+
+            var provider = AiProviderRegistry.Instance.GetProvider(model.ProviderId);
+            if (provider != null)
+            {
+                return await provider.SendMessageAsync(model, conversationHistory);
+            }
+
+            return await SendMessageAsync(model.ToModelItem(), conversationHistory);
+        }
+
+        public async Task<string> SendMessageAsync(string providerId, string modelId, List<ChatMessage> conversationHistory)
+        {
+            var descriptor = AiProviderRegistry.Instance.GetModel(providerId, modelId);
+            if (descriptor == null)
+            {
+                descriptor = new AiModelDescriptor(modelId, modelId, providerId, providerId);
+            }
+            return await SendMessageAsync(descriptor, conversationHistory);
         }
 
         public async Task<string> SendMessageAsync(AiModelItem model, List<ChatMessage> conversationHistory)
@@ -269,7 +297,27 @@ namespace WinAI.Services
                 throw new InvalidOperationException("No API key found for Google Gemini. Please enter your key in Settings.");
             }
 
-            string cleanModel = modelId.StartsWith("models/") ? modelId.Substring(7) : modelId;
+            string cleanModel = modelId?.Trim() ?? "";
+            if (cleanModel.StartsWith("models/")) cleanModel = cleanModel.Substring(7);
+
+            // Normalize common aliases to valid Gemini API model identifiers
+            if (string.IsNullOrWhiteSpace(cleanModel) || cleanModel.Equals("gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModel = "gemini-1.5-flash";
+            }
+            else if (cleanModel.Equals("Gemini 1.5 Pro", StringComparison.OrdinalIgnoreCase) || cleanModel.Equals("gemini-pro", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModel = "gemini-1.5-pro";
+            }
+            else if (cleanModel.Equals("Gemini 1.5 Flash", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModel = "gemini-1.5-flash";
+            }
+            else if (cleanModel.Equals("Gemini 2.0 Flash", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModel = "gemini-2.0-flash";
+            }
+
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/{cleanModel}:generateContent?key={apiKey.Trim()}";
 
             var contentsPayload = new List<object>();
@@ -432,6 +480,15 @@ namespace WinAI.Services
 
         #region Error Handling
 
+        private static string SanitizeErrorDetail(string detail)
+        {
+            if (string.IsNullOrWhiteSpace(detail)) return detail;
+            string scrubbed = Regex.Replace(detail, @"sk-ant-[a-zA-Z0-9_\-]{20,}", "[REDACTED_KEY]");
+            scrubbed = Regex.Replace(scrubbed, @"sk-[a-zA-Z0-9_\-]{20,}", "[REDACTED_KEY]");
+            scrubbed = Regex.Replace(scrubbed, @"AIza[a-zA-Z0-9_\-]{20,}", "[REDACTED_KEY]");
+            return scrubbed;
+        }
+
         private void HandleApiError(System.Net.HttpStatusCode statusCode, string responseBody, string providerName)
         {
             string errorMessage = $"HTTP {(int)statusCode} from {providerName}.";
@@ -445,14 +502,14 @@ namespace WinAI.Services
 
                 if (!string.IsNullOrWhiteSpace(detail))
                 {
-                    errorMessage = $"{providerName} Error: {detail}";
+                    errorMessage = $"{providerName} Error: {SanitizeErrorDetail(detail)}";
                 }
             }
             catch
             {
                 if (!string.IsNullOrWhiteSpace(responseBody) && responseBody.Length < 200)
                 {
-                    errorMessage = $"{providerName} Error: {responseBody}";
+                    errorMessage = $"{providerName} Error: {SanitizeErrorDetail(responseBody)}";
                 }
             }
 
@@ -462,7 +519,10 @@ namespace WinAI.Services
             }
             else if ((int)statusCode == 429)
             {
-                throw new InvalidOperationException($"Rate limit or quota reached on {providerName}.\n\nDetail: {errorMessage}");
+                string hint = providerName.Contains("Gemini")
+                    ? "\n\nTip: Gemini 1.5 Flash has higher free quota than 1.5 Pro. You can select Gemini 1.5 Flash from the top model menu."
+                    : "\n\nTip: Check your billing credits and account tier on the provider's developer dashboard.";
+                throw new InvalidOperationException($"Rate limit or quota reached on {providerName}.{hint}\n\nDetail: {errorMessage}");
             }
             else
             {
