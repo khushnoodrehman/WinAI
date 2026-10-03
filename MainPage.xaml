@@ -558,88 +558,180 @@
                 </StackPanel>
             </Border>
 
-            <!-- Main Composer Row: Pill Input Box + Circular Blue Send Button -->
-            <Grid Grid.Row="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Pill Input Surface -->
-                <Border Grid.Column="0"
-                        Background="{ThemeResource AppInputPillBrush}"
-                        BorderBrush="{ThemeResource AppInputPillBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="23"
-                        MinHeight="46"
-                        Padding="6,0,12,0">
-                    <Grid>
+            <!-- Modern Translucent Chat Composer Bar matching Screenshot 2 & 3 -->
+            <Border Grid.Row="2"
+                    Background="{ThemeResource AppTranslucentBarBrush}"
+                    BorderBrush="{ThemeResource AppTranslucentBarBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="24"
+                    MinHeight="46"
+                    Padding="6,2,6,2"
+                    Margin="0,2,0,4">
+                <Grid>
+                    <!-- State 1: Normal Text Input Bar (Screenshot 2) -->
+                    <Grid x:Name="NormalInputGrid" Visibility="Visible">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left: Attachment / Paperclip button with Flyout (Gallery & Voice) -->
+                        <!-- Left: + Attachment Button -->
                         <Button Grid.Column="0"
-                                Width="36"
-                                Height="36"
+                                Width="38"
+                                Height="38"
                                 Background="Transparent"
                                 Padding="0"
                                 VerticalAlignment="Center"
-                                ToolTipService.ToolTip="Attach or Dictate">
-                            <TextBlock Text="&#xE723;"
+                                Click="AttachImage_Click"
+                                ToolTipService.ToolTip="Attach Image">
+                            <TextBlock Text="&#xE710;"
                                        FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16"
-                                       Foreground="{ThemeResource AppTextSecondaryBrush}"/>
-                            <Button.Flyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem Text="Attach Image" Click="AttachImage_Click" />
-                                    <MenuFlyoutItem Text="Voice Typing" Click="VoiceDictation_Click" />
-                                </MenuFlyout>
-                            </Button.Flyout>
+                                       FontSize="19"
+                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
                         </Button>
 
-                        <!-- Center: Multiline Input Box -->
+                        <!-- Center: Multiline Input Box (Transparent, stays dark in dark mode) -->
                         <TextBox x:Name="InputTextBox"
                                  Grid.Column="1"
-                                 PlaceholderText="Type your message..."
+                                 PlaceholderText="Type a message"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
-                                 MinHeight="38"
-                                 MaxHeight="100"
+                                 MinHeight="36"
+                                 MaxHeight="96"
                                  InputScope="Chat"
                                  Background="Transparent"
                                  BorderThickness="0"
+                                 FontSize="15"
+                                 FontFamily="Segoe UI"
                                  Foreground="{ThemeResource AppTextPrimaryBrush}"
                                  VerticalAlignment="Center"
+                                 Margin="4,0,4,0"
                                  TextChanged="InputTextBox_TextChanged"
-                                 KeyDown="InputTextBox_KeyDown"/>
-                    </Grid>
-                </Border>
+                                 KeyDown="InputTextBox_KeyDown">
+                            <TextBox.Resources>
+                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                                <StaticResource x:Key="TextControlForeground" ResourceKey="AppTextPrimaryBrush" />
+                                <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="AppTextPrimaryBrush" />
+                                <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="AppTextPrimaryBrush" />
+                                <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="AppTextSecondaryBrush" />
+                                <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="AppTextSecondaryBrush" />
+                                <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="AppTextSecondaryBrush" />
+                            </TextBox.Resources>
+                        </TextBox>
 
-                <!-- Right: Circular Blue Send Button -->
-                <Button x:Name="SendButton"
-                        Grid.Column="1"
-                        Width="46"
-                        Height="46"
-                        Margin="8,0,0,0"
-                        Background="Transparent"
-                        Padding="0"
-                        Click="SendButton_Click"
-                        ToolTipService.ToolTip="Send message">
-                    <Border Width="46"
-                            Height="46"
-                            CornerRadius="23"
-                            Background="{ThemeResource AppAccentBrush}">
-                        <TextBlock Text="&#xE724;"
+                        <!-- Right 1: Voice Microphone Button (Green in Screenshot 2) -->
+                        <Button x:Name="VoiceRecordButton"
+                                Grid.Column="2"
+                                Width="38"
+                                Height="38"
+                                Background="Transparent"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Click="VoiceRecordButton_Click"
+                                ToolTipService.ToolTip="Voice message">
+                            <TextBlock Text="&#xE720;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="19"
+                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+
+                        <!-- Right 2: Send Button (Paper-plane outline in Screenshot 2) -->
+                        <Button x:Name="SendButton"
+                                Grid.Column="3"
+                                Width="38"
+                                Height="38"
+                                Background="Transparent"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Click="SendButton_Click"
+                                ToolTipService.ToolTip="Send message">
+                            <TextBlock Text="&#xE724;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- State 2: Active Voice Recording Bar (Screenshot 3) -->
+                    <Grid x:Name="VoiceRecordingGrid" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Red Mic Icon -->
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE720;"
                                    FontFamily="Segoe MDL2 Assets"
-                                   FontSize="17"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center"
+                                   FontSize="20"
+                                   Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
+                                   Margin="10,0,10,0"
                                    VerticalAlignment="Center"/>
-                    </Border>
-                </Button>
-            </Grid>
+
+                        <!-- Timer (0:01 etc.) -->
+                        <TextBlock x:Name="VoiceRecordingTimerText"
+                                   Grid.Column="1"
+                                   Text="0:00"
+                                   FontSize="16"
+                                   FontFamily="Segoe UI"
+                                   FontWeight="Normal"
+                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <!-- Right 1: Trash / Cancel Recording Button -->
+                        <Button x:Name="CancelVoiceRecordingButton"
+                                Grid.Column="2"
+                                Width="38"
+                                Height="38"
+                                Background="Transparent"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Margin="0,0,4,0"
+                                Click="CancelVoiceRecordingButton_Click"
+                                ToolTipService.ToolTip="Cancel recording">
+                            <TextBlock Text="&#xE74D;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+
+                        <!-- Right 2: Send Recording (Transcribe and send) -->
+                        <Button x:Name="SendVoiceRecordingButton"
+                                Grid.Column="3"
+                                Width="38"
+                                Height="38"
+                                Background="Transparent"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Click="SendVoiceRecordingButton_Click"
+                                ToolTipService.ToolTip="Transcribe and send">
+                            <TextBlock Text="&#xE724;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Page>

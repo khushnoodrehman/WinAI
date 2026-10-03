@@ -26,6 +26,11 @@ namespace WinAI.Views
         private string _selectedModelId = "gpt-4o";
         private string _selectedModelDisplayName = "GPT-4o";
 
+        private DispatcherTimer _voiceTimer;
+        private int _voiceSeconds;
+        private bool _isRecognizingVoice;
+        private readonly VoiceService _voiceService = VoiceService.Instance;
+
         public HomePage()
         {
             this.InitializeComponent();
@@ -53,6 +58,13 @@ namespace WinAI.Views
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
+
+            _voiceTimer?.Stop();
+            if (_isRecognizingVoice)
+            {
+                var ignore = _voiceService.CancelRecordingAsync();
+                _isRecognizingVoice = false;
+            }
 
             var navManager = SystemNavigationManager.GetForCurrentView();
             navManager.BackRequested -= HomePage_BackRequested;
@@ -277,6 +289,76 @@ namespace WinAI.Views
 
             // Direct transition into Chat screen with prompt and active model
             Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(prompt, _selectedProviderId, _selectedModelId));
+        }
+
+        #endregion
+
+        #region Voice Recording & Transcription
+
+        private async void HomeVoiceRecordButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isRecognizingVoice) return;
+            _isRecognizingVoice = true;
+
+            HomeNormalInputGrid.Visibility = Visibility.Collapsed;
+            HomeVoiceRecordingGrid.Visibility = Visibility.Visible;
+            _voiceSeconds = 0;
+            HomeVoiceRecordingTimerText.Text = "0:00";
+
+            if (_voiceTimer == null)
+            {
+                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _voiceTimer.Tick += (s, args) =>
+                {
+                    _voiceSeconds++;
+                    HomeVoiceRecordingTimerText.Text = $"{_voiceSeconds / 60}:{(_voiceSeconds % 60):D2}";
+                };
+            }
+            _voiceTimer.Start();
+
+            await _voiceService.StartRecordingAsync();
+        }
+
+        private async void HomeCancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            _voiceTimer?.Stop();
+            await _voiceService.CancelRecordingAsync();
+
+            HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            HomeNormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+        }
+
+        private async void HomeSendVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            _voiceTimer?.Stop();
+            HomeVoiceRecordingTimerText.Text = "Transcribing...";
+            HomeSendVoiceRecordingButton.IsEnabled = false;
+
+            try
+            {
+                string transcribedText = await _voiceService.StopRecordingAndTranscribeAsync();
+
+                HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                HomeNormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
+
+                if (!string.IsNullOrWhiteSpace(transcribedText))
+                {
+                    // Direct transition into Chat screen with transcribed prompt and active model to send
+                    Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(transcribedText, _selectedProviderId, _selectedModelId));
+                }
+            }
+            catch
+            {
+                HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                HomeNormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
+            }
+            finally
+            {
+                HomeSendVoiceRecordingButton.IsEnabled = true;
+            }
         }
 
         #endregion

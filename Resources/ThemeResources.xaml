@@ -37,6 +37,12 @@
             <SolidColorBrush x:Key="AppAiBubbleBorderBrush" Color="#202732" />
             <SolidColorBrush x:Key="AppInputPillBrush" Color="#1A1E24" />
             <SolidColorBrush x:Key="AppInputPillBorderBrush" Color="#242A33" />
+
+            <!-- Modern Translucent Input Bar & Voice Controls -->
+            <SolidColorBrush x:Key="AppTranslucentBarBrush" Color="#DD141820" />
+            <SolidColorBrush x:Key="AppTranslucentBarBorderBrush" Color="#442E3544" />
+            <SolidColorBrush x:Key="AppVoiceRecordActiveBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="AppSendGreenBrush" Color="#10B981" />
         </ResourceDictionary>
 
         <!-- ==================== LIGHT THEME ==================== -->
@@ -73,6 +79,12 @@
             <SolidColorBrush x:Key="AppAiBubbleBorderBrush" Color="#DFE4EA" />
             <SolidColorBrush x:Key="AppInputPillBrush" Color="#EEF2F6" />
             <SolidColorBrush x:Key="AppInputPillBorderBrush" Color="#DEE3E8" />
+
+            <!-- Modern Translucent Input Bar & Voice Controls -->
+            <SolidColorBrush x:Key="AppTranslucentBarBrush" Color="#EEEDF2F7" />
+            <SolidColorBrush x:Key="AppTranslucentBarBorderBrush" Color="#44C8D2DE" />
+            <SolidColorBrush x:Key="AppVoiceRecordActiveBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="AppSendGreenBrush" Color="#059669" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

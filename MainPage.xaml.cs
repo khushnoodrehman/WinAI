@@ -51,6 +51,8 @@ namespace WinAI
         private bool _isRecognizingVoice;
         private bool _isSending;
         private DispatcherTimer _toastTimer;
+        private DispatcherTimer _voiceTimer;
+        private int _voiceSeconds;
 
         private string _pendingImageBase64;
         private string _pendingImageMimeType;
@@ -1160,32 +1162,75 @@ namespace WinAI
             UpdateSendButtonState();
         }
 
-        private async void VoiceDictation_Click(object sender, RoutedEventArgs e)
+        private async void VoiceRecordButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isRecognizingVoice) return;
-
             _isRecognizingVoice = true;
-            VoiceStatusBanner.Visibility = Visibility.Visible;
+
+            NormalInputGrid.Visibility = Visibility.Collapsed;
+            VoiceRecordingGrid.Visibility = Visibility.Visible;
+            _voiceSeconds = 0;
+            VoiceRecordingTimerText.Text = "0:00";
+
+            if (_voiceTimer == null)
+            {
+                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _voiceTimer.Tick += (s, args) =>
+                {
+                    _voiceSeconds++;
+                    VoiceRecordingTimerText.Text = $"{_voiceSeconds / 60}:{(_voiceSeconds % 60):D2}";
+                };
+            }
+            _voiceTimer.Start();
+
+            await _voiceService.StartRecordingAsync();
+        }
+
+        private async void CancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            _voiceTimer?.Stop();
+            await _voiceService.CancelRecordingAsync();
+
+            VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            NormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+        }
+
+        private async void SendVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            _voiceTimer?.Stop();
+            VoiceRecordingTimerText.Text = "Transcribing...";
+            SendVoiceRecordingButton.IsEnabled = false;
 
             try
             {
-                string speechText = await _voiceService.RecognizeSpeechAsync();
-                if (!string.IsNullOrWhiteSpace(speechText))
-                {
-                    string existing = InputTextBox.Text;
-                    InputTextBox.Text = string.IsNullOrWhiteSpace(existing)
-                        ? speechText
-                        : existing.TrimEnd() + " " + speechText;
+                string transcribedText = await _voiceService.StopRecordingAndTranscribeAsync();
 
-                    InputTextBox.Focus(FocusState.Programmatic);
-                    InputTextBox.Select(InputTextBox.Text.Length, 0);
+                VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                NormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
+
+                if (!string.IsNullOrWhiteSpace(transcribedText))
+                {
+                    InputTextBox.Text = transcribedText;
+                    SendMessage();
                 }
+            }
+            catch
+            {
+                VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                NormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
             }
             finally
             {
-                VoiceStatusBanner.Visibility = Visibility.Collapsed;
-                _isRecognizingVoice = false;
+                SendVoiceRecordingButton.IsEnabled = true;
             }
+        }
+
+        private async void VoiceDictation_Click(object sender, RoutedEventArgs e)
+        {
+            VoiceRecordButton_Click(sender, e);
         }
 
         #endregion
