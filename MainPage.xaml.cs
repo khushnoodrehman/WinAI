@@ -76,7 +76,7 @@ namespace WinAI
             UpdateStatusBar();
 
             // Load or initialize models and session
-            await InitializeChatAsync(e.Parameter as string);
+            await InitializeChatAsync(e.Parameter);
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -125,16 +125,48 @@ namespace WinAI
             }
         }
 
-        private async Task InitializeChatAsync(string parameter)
+        private async Task InitializeChatAsync(object parameter)
         {
             // 1. Load models
             await LoadModelsAsync();
 
+            // Check if launched with direct prompt arguments (e.g. from Home AI launcher)
+            if (parameter is ChatLaunchArgs launchArgs)
+            {
+                if (!string.IsNullOrEmpty(launchArgs.ProviderId) && !string.IsNullOrEmpty(launchArgs.ModelId))
+                {
+                    SelectModelById(launchArgs.ProviderId, launchArgs.ModelId);
+                }
+                else
+                {
+                    var def = GetApplicationDefaultModel();
+                    SelectModelById(def.Item1, def.Item2);
+                }
+
+                _currentSession = await _historyService.CreateNewSessionAsync(_selectedModel?.Id);
+                if (_currentSession != null)
+                {
+                    _currentSession.ProviderId = _currentProviderId;
+                    _currentSession.SelectedModelId = _currentModelId;
+                }
+                Messages.Clear();
+                UpdateSendButtonState();
+
+                if (!string.IsNullOrWhiteSpace(launchArgs.Prompt))
+                {
+                    InputTextBox.Text = launchArgs.Prompt;
+                    SendMessage();
+                }
+                return;
+            }
+
+            string paramString = parameter as string;
+
             // 2. If parameter specifies an existing conversation ID or search title
-            if (!string.IsNullOrEmpty(parameter) && !parameter.Equals("new", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(paramString) && !paramString.Equals("new", StringComparison.OrdinalIgnoreCase))
             {
                 // Check if parameter is a valid conversation ID in SQLite
-                var convById = await _conversationService.GetConversationAsync(parameter);
+                var convById = await _conversationService.GetConversationAsync(paramString);
                 if (convById != null)
                 {
                     await LoadConversationFromDatabaseAsync(convById.Id);
@@ -143,7 +175,7 @@ namespace WinAI
                 }
 
                 // Check if parameter matches a conversation title in SQLite
-                var titleMatches = await _conversationService.SearchConversationsAsync(parameter);
+                var titleMatches = await _conversationService.SearchConversationsAsync(paramString);
                 if (titleMatches != null && titleMatches.Count > 0)
                 {
                     await LoadConversationFromDatabaseAsync(titleMatches[0].Id);
@@ -152,11 +184,11 @@ namespace WinAI
                 }
 
                 // Check if parameter specifies a model / provider
-                HandleNavigationParameter(parameter);
+                HandleNavigationParameter(paramString);
             }
 
             // 3. If parameter is "new" or a provider, start a clean in-memory session (no DB record until first message)
-            if (string.Equals(parameter, "new", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(paramString, "new", StringComparison.OrdinalIgnoreCase))
             {
                 var def = GetApplicationDefaultModel();
                 SelectModelById(def.Item1, def.Item2);

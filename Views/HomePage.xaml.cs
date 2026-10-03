@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.Foundation.Metadata;
+using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
@@ -12,18 +13,23 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WinAI.Models;
 using WinAI.Services;
+using WinAI.Services.Providers;
 
 namespace WinAI.Views
 {
     public sealed partial class HomePage : Page
     {
         private readonly ThemeService _themeService = ThemeService.Instance;
+        private readonly AiProviderRegistry _providerRegistry = AiProviderRegistry.Instance;
+
+        private string _selectedProviderId = "openai";
+        private string _selectedModelId = "gpt-4o";
+        private string _selectedModelDisplayName = "GPT-4o";
 
         public HomePage()
         {
             this.InitializeComponent();
             InitializeGreeting();
-            InitializeMockData();
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -36,6 +42,11 @@ namespace WinAI.Views
             navManager.BackRequested += HomePage_BackRequested;
 
             UpdateStatusBar();
+
+            // Load default model from Settings and populate model picker
+            LoadDefaultModelFromSettings();
+            BuildModelPickerFlyout();
+
             await RefreshRecentConversationsAsync();
         }
 
@@ -68,71 +79,16 @@ namespace WinAI.Views
             int hour = DateTime.Now.Hour;
             if (hour < 12)
             {
-                GreetingTitleText.Text = "Good morning,";
+                GreetingTitleText.Text = "Good morning.";
             }
             else if (hour < 17)
             {
-                GreetingTitleText.Text = "Good afternoon,";
+                GreetingTitleText.Text = "Good afternoon.";
             }
             else
             {
-                GreetingTitleText.Text = "Good evening,";
+                GreetingTitleText.Text = "Good evening.";
             }
-        }
-
-        private void InitializeMockData()
-        {
-            // 1. Initial Mock AI Providers
-            OpenAiItem.Provider = new AIProvider(
-                id: "openai",
-                name: "OpenAI",
-                selectedModel: "GPT-4o",
-                brandColor: Color.FromArgb(255, 16, 163, 127), // #10A37F
-                iconType: "openai"
-            );
-
-            GeminiItem.Provider = new AIProvider(
-                id: "gemini",
-                name: "Gemini",
-                selectedModel: "Gemini 1.5 Pro",
-                brandColor: Color.FromArgb(255, 78, 130, 238), // #4E82EE
-                iconType: "gemini"
-            );
-
-            ClaudeItem.Provider = new AIProvider(
-                id: "claude",
-                name: "Claude",
-                selectedModel: "Claude 3.5 Sonnet",
-                brandColor: Color.FromArgb(255, 217, 119, 87), // #D97757
-                iconType: "claude"
-            );
-
-            PerplexityItem.Provider = new AIProvider(
-                id: "perplexity",
-                name: "Perplexity",
-                selectedModel: "Sonar Large",
-                brandColor: Color.FromArgb(255, 32, 85, 101), // #205565
-                iconType: "perplexity"
-            );
-
-            // 2. Initial Mock Recent Conversations
-            Conv1Item.Conversation = new Conversation(
-                id: "c1",
-                title: "Project Ideas",
-                timeAgo: "2 hours ago"
-            );
-
-            Conv2Item.Conversation = new Conversation(
-                id: "c2",
-                title: "Windows 10 Mobile",
-                timeAgo: "5 hours ago"
-            );
-
-            Conv3Item.Conversation = new Conversation(
-                id: "c3",
-                title: "React Native Help",
-                timeAgo: "Yesterday"
-            );
         }
 
         private void UpdateStatusBar()
@@ -160,7 +116,255 @@ namespace WinAI.Views
             }
         }
 
-        #region Navigation & Actions
+        #region Default Model & Provider Loading
+
+        private void LoadDefaultModelFromSettings()
+        {
+            try
+            {
+                var localSettings = ApplicationData.Current.LocalSettings.Values;
+                string defaultProvider = localSettings.ContainsKey("App_DefaultProvider")
+                    ? localSettings["App_DefaultProvider"] as string
+                    : "OpenAI";
+                string defaultModel = localSettings.ContainsKey("App_DefaultModel")
+                    ? localSettings["App_DefaultModel"] as string
+                    : "GPT-4o";
+
+                string normProvider = AiProviderRegistry.NormalizeProviderId(defaultProvider);
+                var descriptor = _providerRegistry.GetModel(normProvider, defaultModel);
+
+                if (descriptor != null)
+                {
+                    SetSelectedModel(descriptor.ProviderId, descriptor.Id, descriptor.DisplayName);
+                }
+                else
+                {
+                    SetSelectedModel(normProvider, defaultModel ?? "gpt-4o", defaultModel ?? "GPT-4o");
+                }
+            }
+            catch
+            {
+                SetSelectedModel("openai", "gpt-4o", "GPT-4o");
+            }
+        }
+
+        private void SetSelectedModel(string providerId, string modelId, string displayName)
+        {
+            _selectedProviderId = providerId ?? "openai";
+            _selectedModelId = modelId ?? "gpt-4o";
+            _selectedModelDisplayName = displayName ?? "GPT-4o";
+
+            if (HomeSelectedModelText != null)
+            {
+                HomeSelectedModelText.Text = _selectedModelDisplayName;
+            }
+
+            UpdateModelIconVisuals(_selectedProviderId);
+        }
+
+        private void UpdateModelIconVisuals(string providerId)
+        {
+            if (HomeModelIconContainer == null || HomeModelIconGlyph == null) return;
+
+            string norm = AiProviderRegistry.NormalizeProviderId(providerId);
+            switch (norm)
+            {
+                case "google":
+                case "gemini":
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 78, 130, 238));
+                    HomeModelIconGlyph.Text = "\uE80A";
+                    break;
+                case "anthropic":
+                case "claude":
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 217, 119, 87));
+                    HomeModelIconGlyph.Text = "\uE749";
+                    break;
+                case "deepseek":
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 29, 78, 216));
+                    HomeModelIconGlyph.Text = "\uE756";
+                    break;
+                case "xai":
+                case "grok":
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 30, 41, 59));
+                    HomeModelIconGlyph.Text = "\uE7C3";
+                    break;
+                case "perplexity":
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 32, 85, 101));
+                    HomeModelIconGlyph.Text = "\uE721";
+                    break;
+                case "openai":
+                default:
+                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 16, 163, 127));
+                    HomeModelIconGlyph.Text = "\uE8BD";
+                    break;
+            }
+        }
+
+        private void BuildModelPickerFlyout()
+        {
+            if (HomeModelPickerFlyout == null) return;
+
+            HomeModelPickerFlyout.Items.Clear();
+
+            var allModels = _providerRegistry.GetAllModels();
+            if (allModels == null || allModels.Count == 0) return;
+
+            string lastProvider = null;
+            foreach (var m in allModels)
+            {
+                if (m.ProviderName != lastProvider)
+                {
+                    lastProvider = m.ProviderName;
+                    var headerItem = new MenuFlyoutItem
+                    {
+                        Text = $"— {m.ProviderName} —",
+                        IsEnabled = false,
+                        FontSize = 12
+                    };
+                    HomeModelPickerFlyout.Items.Add(headerItem);
+                }
+
+                var item = new MenuFlyoutItem
+                {
+                    Text = m.DisplayName,
+                    Tag = m
+                };
+                item.Click += (s, args) =>
+                {
+                    if (s is MenuFlyoutItem clicked && clicked.Tag is AiModelDescriptor desc)
+                    {
+                        SetSelectedModel(desc.ProviderId, desc.Id, desc.DisplayName);
+                    }
+                };
+                HomeModelPickerFlyout.Items.Add(item);
+            }
+        }
+
+        #endregion
+
+        #region Prompt Submission & Navigation
+
+        private void HomePromptTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                var shiftState = CoreWindow.GetForCurrentThread().GetKeyState(Windows.System.VirtualKey.Shift);
+                bool isShift = (shiftState & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+                if (!isShift)
+                {
+                    e.Handled = true;
+                    SubmitPrompt();
+                }
+            }
+        }
+
+        private void HomePromptTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Optional: update UI state if needed
+        }
+
+        private void HomeSendButton_Click(object sender, RoutedEventArgs e)
+        {
+            SubmitPrompt();
+        }
+
+        private void SubmitPrompt()
+        {
+            string prompt = HomePromptTextBox.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(prompt)) return;
+
+            HomePromptTextBox.Text = string.Empty;
+
+            // Direct transition into Chat screen with prompt and active model
+            Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(prompt, _selectedProviderId, _selectedModelId));
+        }
+
+        #endregion
+
+        #region Recent Conversations
+
+        private void ConversationItem_Click(object sender, Conversation conv)
+        {
+            if (conv != null)
+            {
+                Frame.Navigate(typeof(MainPage), !string.IsNullOrEmpty(conv.Id) ? conv.Id : conv.Title);
+            }
+        }
+
+        private void ViewAllConversations_Click(object sender, RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(ConversationsPage));
+        }
+
+        private async Task RefreshRecentConversationsAsync()
+        {
+            try
+            {
+                var convs = await Data.Services.ConversationService.Instance.GetConversationsAsync(includeArchived: false);
+                if (convs != null && convs.Count > 0)
+                {
+                    EmptyRecentMessageText.Visibility = Visibility.Collapsed;
+
+                    // Item 1
+                    Conv1Item.Conversation = new Conversation(convs[0].Id, convs[0].Title, FormatTimeAgo(convs[0].LocalUpdatedAt), convs[0].LastMessagePreview);
+                    Conv1Item.Visibility = Visibility.Visible;
+
+                    // Item 2
+                    if (convs.Count > 1)
+                    {
+                        Conv1Divider.Visibility = Visibility.Visible;
+                        Conv2Item.Conversation = new Conversation(convs[1].Id, convs[1].Title, FormatTimeAgo(convs[1].LocalUpdatedAt), convs[1].LastMessagePreview);
+                        Conv2Item.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        Conv1Divider.Visibility = Visibility.Collapsed;
+                        Conv2Item.Visibility = Visibility.Collapsed;
+                    }
+
+                    // Item 3
+                    if (convs.Count > 2)
+                    {
+                        Conv2Divider.Visibility = Visibility.Visible;
+                        Conv3Item.Conversation = new Conversation(convs[2].Id, convs[2].Title, FormatTimeAgo(convs[2].LocalUpdatedAt), convs[2].LastMessagePreview);
+                        Conv3Item.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        Conv2Divider.Visibility = Visibility.Collapsed;
+                        Conv3Item.Visibility = Visibility.Collapsed;
+                    }
+                }
+                else
+                {
+                    Conv1Item.Visibility = Visibility.Collapsed;
+                    Conv1Divider.Visibility = Visibility.Collapsed;
+                    Conv2Item.Visibility = Visibility.Collapsed;
+                    Conv2Divider.Visibility = Visibility.Collapsed;
+                    Conv3Item.Visibility = Visibility.Collapsed;
+                    EmptyRecentMessageText.Visibility = Visibility.Visible;
+                }
+            }
+            catch
+            {
+                // Fallback gracefully
+            }
+        }
+
+        private static string FormatTimeAgo(DateTime dt)
+        {
+            var span = DateTime.Now - dt;
+            if (span.TotalMinutes < 1) return "Just now";
+            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+            if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+            if (span.TotalDays < 2) return "Yesterday";
+            if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+            return dt.ToString("MMM d");
+        }
+
+        #endregion
+
+        #region Navigation Drawer Actions
 
         private void Hamburger_Click(object sender, RoutedEventArgs e)
         {
@@ -261,118 +465,6 @@ namespace WinAI.Views
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             SettingsItem_Click(sender, e);
-        }
-
-        private void AskAnything_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            Frame.Navigate(typeof(MainPage));
-        }
-
-        private void AskAnything_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            if (sender is Border b && Application.Current.Resources.TryGetValue("AppItemPressedBrush", out object brush))
-            {
-                b.Background = brush as Brush;
-            }
-        }
-
-        private void AskAnything_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            if (sender is Border b && Application.Current.Resources.TryGetValue("AppSurfaceBrush", out object brush))
-            {
-                b.Background = brush as Brush;
-            }
-        }
-
-        private void NavigateToChats_Click(object sender, RoutedEventArgs e)
-        {
-            ConversationsItem_Click(sender, e);
-        }
-
-        private void NavigateToVault_Click(object sender, RoutedEventArgs e)
-        {
-            KeyVaultItem_Click(sender, e);
-        }
-
-        private void ManageProviders_Click(object sender, RoutedEventArgs e)
-        {
-            AiProvidersItem_Click(sender, e);
-        }
-
-        private void ViewAllConversations_Click(object sender, RoutedEventArgs e)
-        {
-            Frame.Navigate(typeof(ConversationsPage));
-        }
-
-        private void MoreTab_Click(object sender, RoutedEventArgs e)
-        {
-            if (NavDrawer != null)
-            {
-                NavDrawer.IsPaneOpen = !NavDrawer.IsPaneOpen;
-            }
-        }
-
-        private void ProviderItem_Click(object sender, AIProvider provider)
-        {
-            Frame.Navigate(typeof(MainPage), provider?.Id);
-        }
-
-        private void ConversationItem_Click(object sender, Conversation conv)
-        {
-            if (conv != null)
-            {
-                Frame.Navigate(typeof(MainPage), !string.IsNullOrEmpty(conv.Id) ? conv.Id : conv.Title);
-            }
-        }
-
-        private async Task RefreshRecentConversationsAsync()
-        {
-            try
-            {
-                var convs = await Data.Services.ConversationService.Instance.GetConversationsAsync(includeArchived: false);
-                if (convs != null && convs.Count > 0)
-                {
-                    if (convs.Count > 0 && Conv1Item != null)
-                    {
-                        Conv1Item.Conversation = new Conversation(convs[0].Id, convs[0].Title, FormatTimeAgo(convs[0].LocalUpdatedAt), convs[0].LastMessagePreview);
-                        Conv1Item.Visibility = Visibility.Visible;
-                    }
-                    if (convs.Count > 1 && Conv2Item != null)
-                    {
-                        Conv2Item.Conversation = new Conversation(convs[1].Id, convs[1].Title, FormatTimeAgo(convs[1].LocalUpdatedAt), convs[1].LastMessagePreview);
-                        Conv2Item.Visibility = Visibility.Visible;
-                    }
-                    else if (Conv2Item != null)
-                    {
-                        Conv2Item.Visibility = Visibility.Collapsed;
-                    }
-
-                    if (convs.Count > 2 && Conv3Item != null)
-                    {
-                        Conv3Item.Conversation = new Conversation(convs[2].Id, convs[2].Title, FormatTimeAgo(convs[2].LocalUpdatedAt), convs[2].LastMessagePreview);
-                        Conv3Item.Visibility = Visibility.Visible;
-                    }
-                    else if (Conv3Item != null)
-                    {
-                        Conv3Item.Visibility = Visibility.Collapsed;
-                    }
-                }
-            }
-            catch
-            {
-                // Fallback gracefully
-            }
-        }
-
-        private static string FormatTimeAgo(DateTime dt)
-        {
-            var span = DateTime.Now - dt;
-            if (span.TotalMinutes < 1) return "Just now";
-            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
-            if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
-            if (span.TotalDays < 2) return "Yesterday";
-            if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
-            return dt.ToString("MMM d");
         }
 
         private void ToggleTheme_Click(object sender, RoutedEventArgs e)

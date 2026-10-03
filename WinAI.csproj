@@ -177,6 +177,7 @@
     <Compile Include="Models\AIProvider.cs" />
     <Compile Include="Models\ModelCapabilities.cs" />
     <Compile Include="Models\AiModelDescriptor.cs" />
+    <Compile Include="Models\ChatLaunchArgs.cs" />
     <Compile Include="Models\Conversation.cs" />
     <Compile Include="Services\Providers\IAiProvider.cs" />
     <Compile Include="Services\Providers\BaseAiProvider.cs" />
