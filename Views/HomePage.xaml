@@ -345,74 +345,79 @@
                                            Margin="0,4,0,0" />
                             </StackPanel>
 
-                            <!-- Hero Input Surface Card -->
-                            <Border CornerRadius="10"
-                                    Background="{ThemeResource AppSurfaceBrush}"
-                                    BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
-                                    BorderThickness="1"
-                                    Padding="14,12"
-                                    Margin="0,0,0,12">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
+                            <!-- Hero Input Row (Normal size, stays dark on click/focus, Send button outside) -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                                    <!-- Multiline Prompt Input Box -->
+                                <!-- Input Box in styled Surface Border -->
+                                <Border Grid.Column="0"
+                                        CornerRadius="8"
+                                        Background="{ThemeResource AppSurfaceBrush}"
+                                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        Padding="12,2"
+                                        Margin="0,0,10,0"
+                                        MinHeight="46"
+                                        VerticalAlignment="Center">
                                     <TextBox x:Name="HomePromptTextBox"
-                                             Grid.Row="0"
                                              PlaceholderText="Ask anything..."
                                              AcceptsReturn="True"
                                              TextWrapping="Wrap"
-                                             MinHeight="80"
-                                             MaxHeight="160"
+                                             MinHeight="38"
+                                             MaxHeight="96"
                                              InputScope="Chat"
                                              Background="Transparent"
                                              BorderThickness="0"
-                                             FontSize="15.5"
+                                             FontSize="15"
                                              FontFamily="Segoe UI"
                                              Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                             VerticalAlignment="Center"
                                              KeyDown="HomePromptTextBox_KeyDown"
-                                             TextChanged="HomePromptTextBox_TextChanged" />
+                                             TextChanged="HomePromptTextBox_TextChanged">
+                                        <TextBox.Resources>
+                                            <!-- Prevent white background flash on click/focus in dark mode -->
+                                            <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                                            <StaticResource x:Key="TextControlForeground" ResourceKey="AppTextPrimaryBrush" />
+                                            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="AppTextPrimaryBrush" />
+                                            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="AppTextPrimaryBrush" />
+                                            <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="AppTextSecondaryBrush" />
+                                            <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="AppTextSecondaryBrush" />
+                                            <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="AppTextSecondaryBrush" />
+                                        </TextBox.Resources>
+                                    </TextBox>
+                                </Border>
 
-                                    <!-- Bottom Row inside card: hint and send button -->
-                                    <Grid Grid.Row="1" Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <TextBlock Text="Press Enter to send"
-                                                   FontSize="11.5"
-                                                   FontFamily="Segoe UI"
-                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                   VerticalAlignment="Center"
-                                                   Opacity="0.8" />
-
-                                        <!-- Circular Accent Send Button -->
-                                        <Button x:Name="HomeSendButton"
-                                                Grid.Column="1"
-                                                Width="38"
-                                                Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
-                                                Click="HomeSendButton_Click"
-                                                ToolTipService.ToolTip="Send prompt">
-                                            <Border Width="38"
-                                                    Height="38"
-                                                    CornerRadius="19"
-                                                    Background="{ThemeResource AppAccentBrush}">
-                                                <TextBlock Text="&#xE724;"
-                                                           FontFamily="Segoe MDL2 Assets"
-                                                           FontSize="14"
-                                                           Foreground="White"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center" />
-                                            </Border>
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </Border>
+                                <!-- Circular Accent Send Button (Outside on the right) -->
+                                <Button x:Name="HomeSendButton"
+                                        Grid.Column="1"
+                                        Width="46"
+                                        Height="46"
+                                        Background="Transparent"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Click="HomeSendButton_Click"
+                                        ToolTipService.ToolTip="Send prompt">
+                                    <Border Width="46"
+                                            Height="46"
+                                            CornerRadius="23"
+                                            Background="{ThemeResource AppAccentBrush}">
+                                        <TextBlock Text="&#xE724;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="16"
+                                                   Foreground="White"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+                                </Button>
+                            </Grid>
 
                             <!-- Model Selector Dropdown Button below the hero input -->
                             <Button x:Name="HomeModelSelectorButton"

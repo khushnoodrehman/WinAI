@@ -267,8 +267,6 @@
                         <RowDefinition Height="Auto" />
                         <!-- Row 1: Main Scrollable Content Area -->
                         <RowDefinition Height="*" />
-                        <!-- Row 2: Fixed Bottom Navigation Bar (Height 54) -->
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <!-- ==================== TOP APP BAR ==================== -->
@@ -551,115 +549,6 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
-
-                    <!-- ==================== BOTTOM NAVIGATION (Vault Selected) ==================== -->
-                    <Border Grid.Row="2"
-                            Height="54"
-                            Background="{ThemeResource AppBottomNavBackgroundBrush}"
-                            BorderBrush="{ThemeResource AppBottomNavBorderBrush}"
-                            BorderThickness="0,1,0,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Tab 1: Home -->
-                            <Button Grid.Column="0"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    Background="Transparent"
-                                    Padding="0"
-                                    Click="BottomHome_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE80F;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="16"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center" />
-                                    <TextBlock Text="Home"
-                                               FontSize="11"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,2,0,4" />
-                                </StackPanel>
-                            </Button>
-
-                            <!-- Tab 2: Chats -->
-                            <Button Grid.Column="1"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    Background="Transparent"
-                                    Padding="0"
-                                    Click="BottomChats_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE8BD;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="16"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center" />
-                                    <TextBlock Text="Chats"
-                                               FontSize="11"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,2,0,4" />
-                                </StackPanel>
-                            </Button>
-
-                            <!-- Tab 3: Vault (SELECTED ACTIVE) -->
-                            <Button Grid.Column="2"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    Background="Transparent"
-                                    Padding="0"
-                                    Click="BottomVault_Click">
-                                <Grid>
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <TextBlock Text="&#xE72E;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="16"
-                                                   Foreground="{ThemeResource AppAccentBrush}"
-                                                   HorizontalAlignment="Center" />
-                                        <TextBlock Text="Vault"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{ThemeResource AppAccentBrush}"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="0,2,0,4" />
-                                    </StackPanel>
-                                    <!-- Blue bottom selection indicator bar -->
-                                    <Border Height="2.5"
-                                            VerticalAlignment="Bottom"
-                                            HorizontalAlignment="Center"
-                                            Width="38"
-                                            Background="{ThemeResource AppAccentBrush}" />
-                                </Grid>
-                            </Button>
-
-                            <!-- Tab 4: More -->
-                            <Button Grid.Column="3"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    Background="Transparent"
-                                    Padding="0"
-                                    Click="BottomMore_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE700;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="16"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center" />
-                                    <TextBlock Text="More"
-                                               FontSize="11"
-                                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,2,0,4" />
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                    </Border>
                 </Grid>
             </SplitView.Content>
         </SplitView>
