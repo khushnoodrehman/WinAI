@@ -474,5 +474,43 @@ namespace WinAI.Views
         }
 
         #endregion
+
+        #region Backward Compatibility Stubs
+
+        private void AskAnything_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            SubmitPrompt();
+        }
+
+        private void AskAnything_PointerEntered(object sender, PointerRoutedEventArgs e) { }
+
+        private void AskAnything_PointerExited(object sender, PointerRoutedEventArgs e) { }
+
+        private void NavigateToChats_Click(object sender, RoutedEventArgs e)
+        {
+            ConversationsItem_Click(sender, e);
+        }
+
+        private void NavigateToVault_Click(object sender, RoutedEventArgs e)
+        {
+            KeyVaultItem_Click(sender, e);
+        }
+
+        private void MoreTab_Click(object sender, RoutedEventArgs e)
+        {
+            if (NavDrawer != null) NavDrawer.IsPaneOpen = !NavDrawer.IsPaneOpen;
+        }
+
+        private void ManageProviders_Click(object sender, RoutedEventArgs e)
+        {
+            AiProvidersItem_Click(sender, e);
+        }
+
+        private void ProviderItem_Click(object sender, AIProvider provider)
+        {
+            Frame.Navigate(typeof(MainPage), provider?.Id);
+        }
+
+        #endregion
     }
 }
