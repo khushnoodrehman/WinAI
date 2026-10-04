@@ -11,9 +11,52 @@
           Background="Transparent"
           Padding="14,10,14,10"
           MinHeight="50"
-          PointerEntered="RootGrid_PointerEntered"
+          PointerPressed="RootGrid_PointerPressed"
+          PointerReleased="RootGrid_PointerReleased"
           PointerExited="RootGrid_PointerExited"
+          PointerCanceled="RootGrid_PointerCanceled"
+          PointerCaptureLost="RootGrid_PointerCaptureLost"
           Tapped="RootGrid_Tapped">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Selected">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource WinAISelectedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="SelectedPressed">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
 
         <Grid.ColumnDefinitions>
             <!-- Column 0: Provider Icon -->
@@ -25,12 +68,12 @@
         </Grid.ColumnDefinitions>
 
         <!-- Provider Icon -->
-        <controls:ProviderIcon x:Name="ItemProviderIcon"
-                               Grid.Column="0"
-                               IconSize="32"
-                               BadgeCornerRadius="7"
-                               VerticalAlignment="Center"
-                               Margin="0,0,12,0"/>
+        <controls:WinAIProviderIcon x:Name="ItemProviderIcon"
+                                    Grid.Column="0"
+                                    IconSize="32"
+                                    BadgeCornerRadius="7"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,12,0"/>
 
         <!-- Model Info -->
         <StackPanel Grid.Column="1" VerticalAlignment="Center">

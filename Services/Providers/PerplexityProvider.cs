@@ -28,14 +28,11 @@ namespace WinAI.Services.Providers
                 {
                     var caps = ModelCapabilities.Text;
                     if (item.Id.Contains("reasoning")) caps |= ModelCapabilities.Reasoning;
-                    list.Add(new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description));
+                    var desc = new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description);
+                    desc.IsAvailable = item.IsAvailable;
+                    desc.Status = item.Status;
+                    list.Add(desc);
                 }
-            }
-            else
-            {
-                list.Add(new AiModelDescriptor("sonar", "Sonar (Online Search)", Id, DisplayName, ModelCapabilities.Text, configured));
-                list.Add(new AiModelDescriptor("sonar-pro", "Sonar Pro", Id, DisplayName, ModelCapabilities.Text, configured));
-                list.Add(new AiModelDescriptor("sonar-reasoning", "Sonar Reasoning", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Reasoning, configured));
             }
 
             return list;
@@ -56,6 +53,13 @@ namespace WinAI.Services.Providers
             }
 
             var messagesPayload = new List<object>();
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
+            messagesPayload.Add(new
+            {
+                role = "system",
+                content = $"You are an AI assistant powered by Perplexity on WinAI (Windows 10 Mobile). The current date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this accurate real-time date and time whenever asked about dates, days, years, or current time."
+            });
             var context = conversationHistory.Skip(Math.Max(0, conversationHistory.Count - 16));
             foreach (var msg in context)
             {

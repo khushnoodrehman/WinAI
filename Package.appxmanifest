@@ -8,14 +8,14 @@
 
   <Identity
     Name="5b03dfdc-b671-49ed-ab2f-6419837e706d"
-    Publisher="CN=Khush"
+    Publisher="CN=SevenLabs"
     Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="5b03dfdc-b671-49ed-ab2f-6419837e706d" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>WinAI</DisplayName>
-    <PublisherDisplayName>Khush</PublisherDisplayName>
+    <PublisherDisplayName>SevenLabs</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -46,5 +46,6 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <DeviceCapability Name="microphone" />
+    <DeviceCapability Name="webcam" />
   </Capabilities>
 </Package>

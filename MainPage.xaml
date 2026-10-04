@@ -14,27 +14,21 @@
     <Page.Resources>
         <!-- ==================== USER MESSAGE TEMPLATE (RIGHT) ==================== -->
         <DataTemplate x:Key="UserMessageTemplate" x:DataType="models:ChatMessage">
-            <Grid HorizontalAlignment="Right" Margin="32,4,0,6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
+            <Grid HorizontalAlignment="Right" Margin="48,4,0,6">
                 <!-- User Message Bubble -->
-                <Border Grid.Column="0"
-                        HorizontalAlignment="Right"
+                <Border HorizontalAlignment="Right"
                         Background="{ThemeResource AppUserBubbleBrush}"
                         BorderBrush="{ThemeResource AppUserBubbleBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="12"
                         Padding="13,10,13,8"
-                        MaxWidth="270">
+                        MaxWidth="290">
                     <StackPanel>
                         <!-- Attached Image preview in chat bubble -->
                         <Image Source="{x:Bind ImageSource, Mode=OneWay}"
                                Visibility="{x:Bind ImageVisibility, Mode=OneWay}"
                                MaxHeight="200"
-                               MaxWidth="244"
+                               MaxWidth="264"
                                Stretch="Uniform"
                                Margin="0,0,0,6"/>
 
@@ -45,42 +39,14 @@
                                    LineHeight="20"
                                    IsTextSelectionEnabled="True"/>
 
-                        <!-- Timestamp + Blue Read Receipts -->
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Right"
-                                    Margin="0,5,0,0">
-                            <TextBlock Text="{x:Bind FormattedTime}"
-                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                       Opacity="0.75"
-                                       FontSize="10.5"
-                                       Margin="0,0,5,0"
-                                       VerticalAlignment="Center"/>
-                            <!-- Double checkmark in Windows Blue -->
-                            <TextBlock Text="&#xE73E;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="10"
-                                       Foreground="{ThemeResource AppAccentBrush}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <!-- Clean Timestamp (no messenger ticks) -->
+                        <TextBlock Text="{x:Bind FormattedTime}"
+                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                   Opacity="0.75"
+                                   FontSize="10.5"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,5,0,0"/>
                     </StackPanel>
-                </Border>
-
-                <!-- User Person Avatar Circle on the right -->
-                <Border Grid.Column="1"
-                        Width="28"
-                        Height="28"
-                        CornerRadius="14"
-                        Background="{ThemeResource AppSurfaceBrush}"
-                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
-                        BorderThickness="1"
-                        VerticalAlignment="Top"
-                        Margin="8,2,0,0">
-                    <TextBlock Text="&#xE77B;"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="13"
-                               Foreground="{ThemeResource AppTextSecondaryBrush}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
                 </Border>
             </Grid>
         </DataTemplate>
@@ -166,19 +132,19 @@
                             Margin="0,6,0,4"
                             Padding="4,2">
                         <StackPanel Orientation="Horizontal">
-                            <Button Width="30" Height="26" Background="Transparent" Padding="0"
+                            <Button Style="{StaticResource WinAIIconButtonStyle}" Width="28" Height="26" MinWidth="24" MinHeight="24"
                                     Tag="{x:Bind Text}" Click="CopyMessage_Click" ToolTipService.ToolTip="Copy">
                                 <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                             </Button>
-                            <Button Width="30" Height="26" Background="Transparent" Padding="0"
+                            <Button Style="{StaticResource WinAIIconButtonStyle}" Width="28" Height="26" MinWidth="24" MinHeight="24"
                                     Click="LikeMessage_Click" ToolTipService.ToolTip="Like">
                                 <TextBlock Text="&#xE8E1;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                             </Button>
-                            <Button Width="30" Height="26" Background="Transparent" Padding="0"
+                            <Button Style="{StaticResource WinAIIconButtonStyle}" Width="28" Height="26" MinWidth="24" MinHeight="24"
                                     Click="DislikeMessage_Click" ToolTipService.ToolTip="Dislike">
                                 <TextBlock Text="&#xE8E0;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                             </Button>
-                            <Button Width="30" Height="26" Background="Transparent" Padding="0"
+                            <Button Style="{StaticResource WinAIIconButtonStyle}" Width="28" Height="26" MinWidth="24" MinHeight="24"
                                     Click="MoreMessageAction_Click" ToolTipService.ToolTip="More">
                                 <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                             </Button>
@@ -198,7 +164,7 @@
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" Height="1" Background="{ThemeResource AppDividerBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0.85">
-                    <controls:ProviderIcon ProviderId="{x:Bind ProviderId, Mode=OneWay}"
+                    <controls:WinAIProviderIcon ProviderId="{x:Bind ProviderId, Mode=OneWay}"
                                            IconSize="16"
                                            BadgeCornerRadius="4"
                                            Margin="0,0,6,0"
@@ -265,7 +231,7 @@
                         ToolTipService.ToolTip="Switch AI">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- Reusable Provider Brand Icon -->
-                        <controls:ProviderIcon x:Name="HeaderProviderIcon"
+                        <controls:WinAIProviderIcon x:Name="HeaderProviderIcon"
                                                ProviderId="openai"
                                                IconSize="32"
                                                BadgeCornerRadius="7"
@@ -290,6 +256,11 @@
                                            FontSize="11"
                                            Foreground="{ThemeResource AppAccentBrush}"
                                            Visibility="Collapsed"/>
+                                <TextBlock x:Name="ModelUnavailableHeaderWarning"
+                                           Text=" • Unavailable"
+                                           FontSize="11"
+                                           Foreground="{ThemeResource WinAIErrorBrush}"
+                                           Visibility="Collapsed"/>
                                 <TextBlock Text="&#xE70D;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="8"
@@ -301,19 +272,8 @@
                     </StackPanel>
 
                     <Button.Flyout>
-                        <Flyout x:Name="SwitchAiFlyout" Placement="Bottom" Opening="SwitchAiFlyout_Opening">
-                            <Flyout.FlyoutPresenterStyle>
-                                <Style TargetType="FlyoutPresenter">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                    <Setter Property="BorderBrush" Value="{ThemeResource AppDividerBrush}"/>
-                                    <Setter Property="Background" Value="{ThemeResource AppSurfaceBrush}"/>
-                                    <Setter Property="MinWidth" Value="280"/>
-                                    <Setter Property="MaxWidth" Value="320"/>
-                                    <Setter Property="MaxHeight" Value="420"/>
-                                </Style>
-                            </Flyout.FlyoutPresenterStyle>
+                        <Flyout x:Name="SwitchAiFlyout" Placement="Bottom" Opening="SwitchAiFlyout_Opening"
+                                FlyoutPresenterStyle="{StaticResource ModernFlyoutPresenterStyle}">
                             <Grid Width="280">
                                 <Grid.RowDefinitions>
                                     <!-- Header -->
@@ -381,7 +341,7 @@
                            FontSize="16"
                            Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                 <Button.Flyout>
-                    <MenuFlyout>
+                    <MenuFlyout MenuFlyoutPresenterStyle="{StaticResource ModernMenuFlyoutStyle}">
                         <MenuFlyoutItem Text="New Chat" Click="NewChat_Click" />
                         <MenuFlyoutItem Text="Clear Chat" Click="ClearChat_Click" />
                         <MenuFlyoutItem Text="Copy Conversation" Click="CopyConversation_Click" />
@@ -404,16 +364,42 @@
             </Grid.RowDefinitions>
 
             <!-- Date Separator: ─── Today ─── -->
-            <Grid Grid.Row="0" Margin="16,12,16,6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Height="1" Background="{ThemeResource AppDividerBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <TextBlock Grid.Column="1" Text="Today" FontSize="11.5" Foreground="{ThemeResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
-                <Border Grid.Column="2" Height="1" Background="{ThemeResource AppDividerBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
-            </Grid>
+            <StackPanel Grid.Row="0">
+                <Grid Margin="16,12,16,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Height="1" Background="{ThemeResource AppDividerBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Grid.Column="1" Text="Today" FontSize="11.5" Foreground="{ThemeResource AppTextSecondaryBrush}" VerticalAlignment="Center"/>
+                    <Border Grid.Column="2" Height="1" Background="{ThemeResource AppDividerBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                </Grid>
+
+                <!-- Selected Model Unavailable Alert Banner (Requirement 10) -->
+                <Border x:Name="ChatModelUnavailableBanner"
+                        Visibility="Collapsed"
+                        Background="{ThemeResource WinAIErrorBrush}"
+                        CornerRadius="6"
+                        Padding="12,8"
+                        Margin="16,4,16,6">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE783;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="White"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ChatModelUnavailableText"
+                                   Text="Your selected model is unavailable. Tap header to choose another model."
+                                   FontSize="12"
+                                   FontFamily="Segoe UI"
+                                   Foreground="White"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
 
             <!-- ListView for Messages -->
             <ListView x:Name="ChatListView"
@@ -446,7 +432,7 @@
                     Visibility="Collapsed"
                     Canvas.ZIndex="100">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <controls:ProviderIcon x:Name="SwitchToastIcon"
+                    <controls:WinAIProviderIcon x:Name="SwitchToastIcon"
                                            ProviderId="openai"
                                            IconSize="16"
                                            BadgeCornerRadius="4"
@@ -544,17 +530,17 @@
                 </Grid>
             </Border>
 
-            <!-- Voice Status Banner -->
+            <!-- Voice Status / Error Banner -->
             <Border x:Name="VoiceStatusBanner"
                     Grid.Row="1"
                     Visibility="Collapsed"
-                    Background="{ThemeResource AppAccentBrush}"
+                    Background="{ThemeResource WinAIErrorBrush}"
                     CornerRadius="6"
                     Padding="10,6"
                     Margin="0,0,0,6">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Listening... Speak into microphone" FontSize="12" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="VoiceStatusBannerIcon" Text="&#xE783;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="VoiceStatusBannerText" Text="Microphone permission is required." FontSize="12" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="WrapWholeWords"/>
                 </StackPanel>
             </Border>
 
@@ -578,14 +564,14 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- Left: + Attachment Button -->
-                        <Button Grid.Column="0"
+                        <Button x:Name="AttachButton"
+                                Grid.Column="0"
+                                Style="{StaticResource WinAIIconButtonStyle}"
                                 Width="38"
                                 Height="38"
-                                Background="Transparent"
-                                Padding="0"
-                                VerticalAlignment="Center"
-                                Click="AttachImage_Click"
-                                ToolTipService.ToolTip="Attach Image">
+                                VerticalAlignment="Bottom"
+                                Click="AttachButton_Click"
+                                ToolTipService.ToolTip="Add attachment">
                             <TextBlock Text="&#xE710;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="19"
@@ -594,79 +580,60 @@
                                        VerticalAlignment="Center"/>
                         </Button>
 
-                        <!-- Center: Multiline Input Box (Transparent, stays dark in dark mode) -->
+                        <!-- Center: Multiline Input Box (Transparent, grows upward like Unison) -->
                         <TextBox x:Name="InputTextBox"
                                  Grid.Column="1"
+                                 Style="{StaticResource WinAITransparentTextBoxStyle}"
                                  PlaceholderText="Type a message"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
-                                 MinHeight="36"
-                                 MaxHeight="96"
+                                 MinHeight="38"
+                                 MaxHeight="120"
                                  InputScope="Chat"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 FontSize="15"
-                                 FontFamily="Segoe UI"
-                                 Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                 VerticalAlignment="Center"
+                                 VerticalAlignment="Bottom"
+                                 VerticalContentAlignment="Center"
                                  Margin="4,0,4,0"
+                                 Padding="6,8,6,6"
                                  TextChanged="InputTextBox_TextChanged"
-                                 KeyDown="InputTextBox_KeyDown">
-                            <TextBox.Resources>
-                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                                <StaticResource x:Key="TextControlForeground" ResourceKey="AppTextPrimaryBrush" />
-                                <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="AppTextPrimaryBrush" />
-                                <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="AppTextPrimaryBrush" />
-                                <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="AppTextSecondaryBrush" />
-                                <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="AppTextSecondaryBrush" />
-                                <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="AppTextSecondaryBrush" />
-                            </TextBox.Resources>
-                        </TextBox>
+                                 KeyDown="InputTextBox_KeyDown" />
 
-                        <!-- Right 1: Voice Microphone Button (Green in Screenshot 2) -->
+                        <!-- Right 1: Voice Microphone Button -->
                         <Button x:Name="VoiceRecordButton"
                                 Grid.Column="2"
+                                Style="{StaticResource WinAIIconButtonStyle}"
                                 Width="38"
                                 Height="38"
-                                Background="Transparent"
-                                Padding="0"
-                                VerticalAlignment="Center"
+                                VerticalAlignment="Bottom"
                                 Click="VoiceRecordButton_Click"
                                 ToolTipService.ToolTip="Voice message">
                             <TextBlock Text="&#xE720;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="19"
-                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       Foreground="{ThemeResource AppAccentBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Button>
 
-                        <!-- Right 2: Send Button (Paper-plane outline in Screenshot 2) -->
+                        <!-- Right 2: Send Button (No grey rectangle in any state) -->
                         <Button x:Name="SendButton"
                                 Grid.Column="3"
+                                Style="{StaticResource WinAIIconButtonStyle}"
                                 Width="38"
                                 Height="38"
-                                Background="Transparent"
-                                Padding="0"
-                                VerticalAlignment="Center"
+                                VerticalAlignment="Bottom"
                                 Click="SendButton_Click"
                                 ToolTipService.ToolTip="Send message">
                             <TextBlock Text="&#xE724;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="18"
-                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       Foreground="{ThemeResource AppAccentBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Button>
                     </Grid>
 
-                    <!-- State 2: Active Voice Recording Bar (Screenshot 3) -->
-                    <Grid x:Name="VoiceRecordingGrid" Visibility="Collapsed">
+                    <!-- State 2: Active Voice Recording Bar (Native Windows Phone Listening UI) -->
+                    <Grid x:Name="VoiceRecordingGrid" Visibility="Collapsed" MinHeight="38">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -674,58 +641,98 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left: Red Mic Icon -->
-                        <TextBlock Grid.Column="0"
-                                   Text="&#xE720;"
-                                   FontFamily="Segoe MDL2 Assets"
-                                   FontSize="20"
-                                   Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
-                                   Margin="10,0,10,0"
-                                   VerticalAlignment="Center"/>
+                        <!-- Column 0: Animated Microphone Indicator -->
+                        <Grid Grid.Column="0" VerticalAlignment="Center" Margin="6,0,8,0" Width="28" Height="28">
+                            <Ellipse x:Name="VoicePulseDot"
+                                     Width="28" Height="28"
+                                     Fill="{ThemeResource AppVoiceRecordActiveBrush}"
+                                     Opacity="0.25"/>
+                            <TextBlock x:Name="VoiceMicIcon"
+                                       Text="&#xE720;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
 
-                        <!-- Timer (0:01 etc.) -->
-                        <TextBlock x:Name="VoiceRecordingTimerText"
-                                   Grid.Column="1"
-                                   Text="0:00"
-                                   FontSize="16"
-                                   FontFamily="Segoe UI"
-                                   FontWeight="Normal"
-                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                   VerticalAlignment="Center"/>
+                        <!-- Column 1: Status & Live Transcription -->
+                        <Grid Grid.Column="1" VerticalAlignment="Center" Margin="0,2,6,2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- Right 1: Trash / Cancel Recording Button -->
+                            <!-- Top line: Status, Timer, and subtle waveform bars -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="VoiceRecordingStatusText"
+                                           Text="Listening..."
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
+                                           Margin="0,0,6,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="VoiceRecordingTimerText"
+                                           Text="0:00"
+                                           FontSize="13"
+                                           FontFamily="Segoe UI"
+                                           FontWeight="Normal"
+                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Center"/>
+
+                                <!-- Subtle Native Windows Phone Audio Waveform Indicator -->
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Rectangle x:Name="VoiceWave1" Width="2.5" Height="8" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.7" Margin="0,0,2,0"/>
+                                    <Rectangle x:Name="VoiceWave2" Width="2.5" Height="14" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.9" Margin="0,0,2,0"/>
+                                    <Rectangle x:Name="VoiceWave3" Width="2.5" Height="10" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.75" Margin="0,0,2,0"/>
+                                    <Rectangle x:Name="VoiceWave4" Width="2.5" Height="6" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Bottom line: Live interim transcribed text (hypothesis) -->
+                            <TextBlock x:Name="VoiceHypothesisText"
+                                       Grid.Row="1"
+                                       Text="Speak now..."
+                                       FontSize="12"
+                                       FontStyle="Italic"
+                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1"
+                                       Margin="0,2,0,0"/>
+                        </Grid>
+
+                        <!-- Column 2: Cancel Recording Button -->
                         <Button x:Name="CancelVoiceRecordingButton"
                                 Grid.Column="2"
+                                Style="{StaticResource WinAIIconButtonStyle}"
                                 Width="38"
                                 Height="38"
-                                Background="Transparent"
-                                Padding="0"
                                 VerticalAlignment="Center"
                                 Margin="0,0,4,0"
                                 Click="CancelVoiceRecordingButton_Click"
-                                ToolTipService.ToolTip="Cancel recording">
-                            <TextBlock Text="&#xE74D;"
+                                ToolTipService.ToolTip="Cancel">
+                            <TextBlock Text="&#xE711;"
                                        FontFamily="Segoe MDL2 Assets"
-                                       FontSize="18"
+                                       FontSize="16"
                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Button>
 
-                        <!-- Right 2: Send Recording (Transcribe and send) -->
-                        <Button x:Name="SendVoiceRecordingButton"
+                        <!-- Column 3: Done Recording Button (Checkmark - puts text into composer without auto-sending) -->
+                        <Button x:Name="DoneVoiceRecordingButton"
                                 Grid.Column="3"
+                                Style="{StaticResource WinAIIconButtonStyle}"
                                 Width="38"
                                 Height="38"
-                                Background="Transparent"
-                                Padding="0"
                                 VerticalAlignment="Center"
-                                Click="SendVoiceRecordingButton_Click"
-                                ToolTipService.ToolTip="Transcribe and send">
-                            <TextBlock Text="&#xE724;"
+                                Click="DoneVoiceRecordingButton_Click"
+                                ToolTipService.ToolTip="Done (insert text)">
+                            <TextBlock Text="&#xE73E;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="18"
-                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                       Foreground="{ThemeResource AppAccentBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Button>

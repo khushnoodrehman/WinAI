@@ -27,7 +27,12 @@
                         <StackPanel Padding="0,32,0,32">
                             <!-- Drawer Header -->
                             <StackPanel Margin="24,0,16,28">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
+                                    <Image Source="ms-appx:///Assets/AppLogo.png"
+                                           Width="28"
+                                           Height="28"
+                                           Margin="0,0,10,0"
+                                           VerticalAlignment="Center" />
                                     <TextBlock Text="Win"
                                                FontSize="28"
                                                FontWeight="SemiBold"
@@ -296,6 +301,11 @@
                             </Button>
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,0,0">
+                                <Image Source="ms-appx:///Assets/AppLogo.png"
+                                       Width="22"
+                                       Height="22"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center" />
                                 <TextBlock Text="Win"
                                            FontSize="21"
                                            FontWeight="SemiBold"
@@ -359,22 +369,20 @@
                                 <!-- Search Input Box -->
                                 <TextBox Grid.Column="1"
                                          x:Name="SearchBox"
+                                         Style="{StaticResource WinAITransparentTextBoxStyle}"
                                          PlaceholderText="Search conversations..."
-                                         Background="Transparent"
-                                         BorderThickness="0"
                                          Foreground="{ThemeResource AppTextPrimaryBrush}"
                                          FontSize="13.5"
                                          VerticalAlignment="Center"
-                                         Padding="0,2,8,2"
+                                         Padding="0,4,8,4"
                                          TextChanged="SearchBox_TextChanged" />
 
                                 <!-- Clear Button (visible when text is present) -->
                                 <Button Grid.Column="2"
                                         x:Name="ClearSearchBtn"
+                                        Style="{StaticResource WinAIIconButtonStyle}"
                                         Width="30"
                                         Height="30"
-                                        Background="Transparent"
-                                        Padding="0"
                                         Visibility="Collapsed"
                                         Click="ClearSearch_Click">
                                     <TextBlock Text="&#xE711;"
@@ -480,7 +488,9 @@
                                            FontSize="15"
                                            Foreground="{ThemeResource AppTextSecondaryBrush}" />
                                 <Button.Flyout>
-                                    <MenuFlyout>
+                                    <MenuFlyout MenuFlyoutPresenterStyle="{StaticResource ModernMenuFlyoutStyle}">
+                                        <MenuFlyoutItem Text="Sort By" Style="{StaticResource ModernMenuFlyoutHeaderStyle}" />
+                                        <MenuFlyoutSeparator />
                                         <MenuFlyoutItem Text="Newest first" Click="SortNewest_Click" />
                                         <MenuFlyoutItem Text="Oldest first" Click="SortOldest_Click" />
                                         <MenuFlyoutItem Text="Alphabetical (A to Z)" Click="SortAlpha_Click" />

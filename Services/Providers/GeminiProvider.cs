@@ -28,14 +28,11 @@ namespace WinAI.Services.Providers
                     var caps = ModelCapabilities.Text | ModelCapabilities.Vision;
                     if (item.Id.Contains("pro")) caps |= ModelCapabilities.Reasoning;
 
-                    list.Add(new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description));
+                    var desc = new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description);
+                    desc.IsAvailable = item.IsAvailable;
+                    desc.Status = item.Status;
+                    list.Add(desc);
                 }
-            }
-            else
-            {
-                list.Add(new AiModelDescriptor("gemini-1.5-flash", "Gemini 1.5 Flash (Fast/High Quota)", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("gemini-2.0-flash", "Gemini 2.0 Flash", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("gemini-1.5-pro", "Gemini 1.5 Pro (Reasoning)", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision | ModelCapabilities.Reasoning, configured));
             }
 
             return list;
@@ -107,12 +104,31 @@ namespace WinAI.Services.Providers
                 });
             }
 
-            var requestBody = new
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
+            string systemPrompt = $"You are WinAI, an intelligent and helpful AI assistant running on Windows 10 Mobile. The current date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this accurate real-time date and time whenever asked about dates, days, years, or current time.";
+
+            // Google Search Grounding Tool enables Gemini to access live real-time web events and Google search
+            var requestBodyWithSearch = new
             {
-                contents = contentsPayload
+                system_instruction = new
+                {
+                    parts = new object[]
+                    {
+                        new { text = systemPrompt }
+                    }
+                },
+                contents = contentsPayload,
+                tools = new object[]
+                {
+                    new
+                    {
+                        google_search = new { }
+                    }
+                }
             };
 
-            string jsonContent = JsonConvert.SerializeObject(requestBody);
+            string jsonContent = JsonConvert.SerializeObject(requestBodyWithSearch);
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
@@ -121,20 +137,106 @@ namespace WinAI.Services.Providers
                 using (var response = await HttpClient.SendAsync(request))
                 {
                     string responseString = await response.Content.ReadAsStringAsync();
-                    if (!response.IsSuccessStatusCode)
+
+                    // If google_search tool is not supported by this specific model/tier, fallback to standard generateContent
+                    if (!response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        var fallbackBody = new
+                        {
+                            system_instruction = new
+                            {
+                                parts = new object[]
+                                {
+                                    new { text = systemPrompt }
+                                }
+                            },
+                            contents = contentsPayload
+                        };
+                        string fallbackJson = JsonConvert.SerializeObject(fallbackBody);
+                        using (var fallbackReq = new HttpRequestMessage(HttpMethod.Post, url))
+                        {
+                            fallbackReq.Content = new StringContent(fallbackJson, Encoding.UTF8, "application/json");
+                            using (var fallbackResp = await HttpClient.SendAsync(fallbackReq))
+                            {
+                                responseString = await fallbackResp.Content.ReadAsStringAsync();
+                                if (!fallbackResp.IsSuccessStatusCode)
+                                {
+                                    HandleApiError(fallbackResp.StatusCode, responseString, DisplayName);
+                                }
+                            }
+                        }
+                    }
+                    else if (!response.IsSuccessStatusCode)
                     {
                         HandleApiError(response.StatusCode, responseString, DisplayName);
                     }
 
-                    var json = JObject.Parse(responseString);
-                    var textPart = json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
-                    if (string.IsNullOrEmpty(textPart))
-                    {
-                        throw new Exception("Received empty response from Google Gemini.");
-                    }
-                    return textPart.Trim();
+                    return ParseGeminiResponse(responseString);
                 }
             }
+        }
+
+        private string ParseGeminiResponse(string responseString)
+        {
+            var json = JObject.Parse(responseString);
+            var candidate = json["candidates"]?[0];
+            if (candidate == null)
+            {
+                throw new Exception("Received empty response from Google Gemini.");
+            }
+
+            var sb = new StringBuilder();
+            var parts = candidate["content"]?["parts"] as JArray;
+            if (parts != null)
+            {
+                foreach (var part in parts)
+                {
+                    string pText = part["text"]?.ToString();
+                    if (!string.IsNullOrEmpty(pText))
+                    {
+                        sb.Append(pText);
+                    }
+                }
+            }
+
+            if (sb.Length == 0)
+            {
+                throw new Exception("Received empty response from Google Gemini.");
+            }
+
+            // Extract Google Search Grounding sources if available
+            var chunks = candidate["groundingMetadata"]?["groundingChunks"] as JArray;
+            if (chunks != null && chunks.Count > 0)
+            {
+                var sourcesList = new List<string>();
+                foreach (var chunk in chunks)
+                {
+                    string uri = chunk["web"]?["uri"]?.ToString();
+                    string title = chunk["web"]?["title"]?.ToString();
+                    if (!string.IsNullOrEmpty(uri))
+                    {
+                        string displayTitle = !string.IsNullOrEmpty(title) ? title.Trim() : uri;
+                        string entry = $"• [{displayTitle}]({uri})";
+                        if (!sourcesList.Contains(entry))
+                        {
+                            sourcesList.Add(entry);
+                        }
+                    }
+                }
+
+                if (sourcesList.Count > 0)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine();
+                    sb.AppendLine("🔍 **Web Sources:**");
+                    foreach (var s in sourcesList.Take(4))
+                    {
+                        sb.AppendLine(s);
+                    }
+                }
+            }
+
+            return sb.ToString().Trim();
         }
     }
 }

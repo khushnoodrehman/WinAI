@@ -26,14 +26,11 @@ namespace WinAI.Services.Providers
                 foreach (var item in cached)
                 {
                     var caps = ModelCapabilities.Text | ModelCapabilities.Vision;
-                    list.Add(new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description));
+                    var desc = new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description);
+                    desc.IsAvailable = item.IsAvailable;
+                    desc.Status = item.Status;
+                    list.Add(desc);
                 }
-            }
-            else
-            {
-                list.Add(new AiModelDescriptor("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("claude-3-5-haiku-20241022", "Claude 3.5 Haiku", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("claude-3-opus-20240229", "Claude 3 Opus", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
             }
 
             return list;
@@ -47,8 +44,8 @@ namespace WinAI.Services.Providers
                 throw new InvalidOperationException("Anthropic Claude API key is missing. Please configure it in Key Vault.");
             }
 
-            string cleanModel = model?.Id?.Trim() ?? "claude-3-5-sonnet-20241022";
-            if (cleanModel.Equals("claude", StringComparison.OrdinalIgnoreCase)) cleanModel = "claude-3-5-sonnet-20241022";
+            string cleanModel = model?.Id?.Trim() ?? "claude-3-7-sonnet-20250219";
+            if (cleanModel.Equals("claude", StringComparison.OrdinalIgnoreCase)) cleanModel = "claude-3-7-sonnet-20250219";
 
             var messagesPayload = new List<object>();
 
@@ -87,9 +84,14 @@ namespace WinAI.Services.Providers
                 }
             }
 
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
+            string systemPrompt = $"You are Claude, an AI assistant accessible via WinAI on Windows 10 Mobile. The accurate real-time date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this exact current date and time when asked about today's date, day, year, or time. If asked about live breaking news, live sports match scores, or real-time events that occurred after your knowledge training cutoff, state your knowledge cutoff date honestly and advise checking the browser for live updates, rather than guessing or denying that events took place.";
+
             var requestBody = new
             {
                 model = cleanModel,
+                system = systemPrompt,
                 max_tokens = 2048,
                 messages = messagesPayload
             };

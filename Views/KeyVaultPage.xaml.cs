@@ -39,13 +39,12 @@ namespace WinAI.Views
 
         private void HookProviderEvents()
         {
-            VaultProviderItem[] items = { OpenAiItem, GeminiItem, ClaudeItem, PerplexityItem, DeepSeekItem, XAiItem };
+            VaultProviderItem[] items = { OpenAiItem, GeminiItem, ClaudeItem, OpenRouterItem, PerplexityItem, DeepSeekItem, XAiItem };
             foreach (var item in items)
             {
-                item.EyeClicked += ProviderItem_EyeClicked;
-                item.EditRequested += ProviderItem_EditRequested;
-                item.TestRequested += ProviderItem_TestRequested;
+                item.CopyRequested += ProviderItem_CopyRequested;
                 item.DeleteRequested += ProviderItem_DeleteRequested;
+                item.EditRequested += ProviderItem_EditRequested;
             }
         }
 
@@ -73,13 +72,6 @@ namespace WinAI.Views
             if (_notificationTimer != null && _notificationTimer.IsEnabled)
             {
                 _notificationTimer.Stop();
-            }
-
-            // Mask all keys when navigating away for security
-            VaultProviderItem[] items = { OpenAiItem, GeminiItem, ClaudeItem, PerplexityItem, DeepSeekItem, XAiItem };
-            foreach (var item in items)
-            {
-                item.SetRevealed(false);
             }
         }
 
@@ -109,6 +101,7 @@ namespace WinAI.Views
             UpdateProviderRow(OpenAiItem, "openai");
             UpdateProviderRow(GeminiItem, "gemini");
             UpdateProviderRow(ClaudeItem, "claude");
+            UpdateProviderRow(OpenRouterItem, "openrouter");
             UpdateProviderRow(PerplexityItem, "perplexity");
             UpdateProviderRow(DeepSeekItem, "deepseek");
             UpdateProviderRow(XAiItem, "xai");
@@ -118,17 +111,6 @@ namespace WinAI.Views
         {
             bool hasKey = _vaultService.HasApiKey(providerId);
             item.IsConfigured = hasKey;
-
-            if (hasKey)
-            {
-                string key = _vaultService.GetApiKey(providerId);
-                item.SetActualKey(key);
-            }
-            else
-            {
-                item.SetActualKey(null);
-            }
-
             item.UpdateUi();
         }
 
@@ -148,32 +130,98 @@ namespace WinAI.Views
 
         #region Provider Item Actions
 
-        private async void ProviderItem_EyeClicked(object sender, VaultProviderItem item)
+        private async void ProviderItem_CopyRequested(object sender, VaultProviderItem item)
         {
-            if (!item.IsConfigured)
+            if (item == null || !item.IsConfigured)
             {
-                ShowNotification($"No API key configured for {item.ProviderName}.");
-                await ShowAddKeyDialogAsync(item.ProviderId);
+                ShowNotification("No API key configured to copy.");
                 return;
             }
 
-            // Check if vault is locked by PIN
-            if (_vaultService.IsVaultLocked())
+            // Phase 3 Requirement 3: Check whether Vault PIN protection is enabled
+            if (_vaultService.HasPin)
             {
-                bool unlocked = await RequestPinUnlockAsync();
-                if (!unlocked) return;
+                // Three dots → Copy API Key → PIN dialog → validate PIN → only then retrieve credential → copy to Clipboard
+                bool pinValid = await RequestPinValidationForCopyAsync();
+                if (!pinValid)
+                {
+                    return;
+                }
             }
 
-            if (!item.IsRevealed)
+            // Retrieve credential transiently ONLY when needed
+            string transientKey = _vaultService.GetApiKey(item.ProviderId);
+            try
             {
-                string key = _vaultService.GetApiKey(item.ProviderId);
-                item.SetActualKey(key);
-                item.SetRevealed(true);
+                if (!string.IsNullOrEmpty(transientKey))
+                {
+                    var dataPackage = new DataPackage();
+                    dataPackage.RequestedOperation = DataPackageOperation.Copy;
+                    dataPackage.SetText(transientKey);
+                    Clipboard.SetContent(dataPackage);
+
+                    // Phase 3 Requirement 4: subtle confirmation: "API key copied."
+                    // Never display the actual key in a dialog or toast.
+                    ShowNotification("API key copied.");
+                }
+                else
+                {
+                    ShowNotification("Could not retrieve key.");
+                }
             }
-            else
+            finally
             {
-                item.SetRevealed(false);
+                // Clear sensitive values from transient variables as soon as practical
+                transientKey = null;
             }
+        }
+
+        private async Task<bool> RequestPinValidationForCopyAsync()
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Key Vault Security",
+                PrimaryButtonText = "Confirm",
+                SecondaryButtonText = "Cancel"
+            };
+
+            var stack = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+            var infoText = new TextBlock
+            {
+                Text = "Enter your vault PIN to copy the API key to clipboard:",
+                FontSize = 13,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            stack.Children.Add(infoText);
+
+            var pinBox = new PasswordBox
+            {
+                Header = "Vault PIN",
+                PlaceholderText = "Enter PIN",
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+            stack.Children.Add(pinBox);
+
+            dialog.Content = stack;
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                string entered = pinBox.Password;
+                pinBox.Password = string.Empty; // Clear promptly
+                if (!string.IsNullOrEmpty(entered) && _vaultService.VerifyPin(entered))
+                {
+                    return true;
+                }
+                else
+                {
+                    ShowNotification("Incorrect PIN. API key was not copied.");
+                    return false;
+                }
+            }
+
+            return false;
         }
 
         private async void ProviderItem_EditRequested(object sender, VaultProviderItem item)
@@ -187,38 +235,6 @@ namespace WinAI.Views
             await ShowAddKeyDialogAsync(item.ProviderId);
         }
 
-        private async void ProviderItem_TestRequested(object sender, VaultProviderItem item)
-        {
-            if (!item.IsConfigured)
-            {
-                ShowNotification($"Configure an API key for {item.ProviderName} first.");
-                return;
-            }
-
-            item.SetStatus("Testing...", true);
-
-            string key = _vaultService.GetApiKey(item.ProviderId);
-            var result = await ModelService.Instance.TestAndFetchModelsForProviderAsync(item.ProviderId, key);
-
-            if (result.Success)
-            {
-                int count = result.Models.Count;
-                item.SetStatus($"Connected ({count} models)", true);
-                ShowNotification($"✓ {item.ProviderName}: {count} models available & saved locally.");
-            }
-            else
-            {
-                item.SetStatus("Failed", false);
-                var errDialog = new ContentDialog
-                {
-                    Title = $"{item.ProviderName} Connection Test",
-                    Content = result.Message,
-                    PrimaryButtonText = "OK"
-                };
-                await errDialog.ShowAsync();
-            }
-        }
-
         private async void ProviderItem_DeleteRequested(object sender, VaultProviderItem item)
         {
             if (_vaultService.IsVaultLocked())
@@ -229,9 +245,9 @@ namespace WinAI.Views
 
             var dialog = new ContentDialog
             {
-                Title = $"Delete {item.ProviderName} Key?",
+                Title = $"Remove {item.ProviderName} Key?",
                 Content = $"Are you sure you want to remove the {item.ProviderName} API key from the local Key Vault?",
-                PrimaryButtonText = "Delete",
+                PrimaryButtonText = "Remove",
                 SecondaryButtonText = "Cancel"
             };
 
@@ -282,8 +298,9 @@ namespace WinAI.Views
                 new { Id = "openai", Name = "OpenAI" },
                 new { Id = "gemini", Name = "Google Gemini" },
                 new { Id = "claude", Name = "Anthropic Claude" },
-                new { Id = "perplexity", Name = "Perplexity AI" },
+                new { Id = "openrouter", Name = "OpenRouter (Free & Paid Models)" },
                 new { Id = "deepseek", Name = "DeepSeek" },
+                new { Id = "perplexity", Name = "Perplexity AI" },
                 new { Id = "xai", Name = "xAI" }
             };
 
@@ -307,19 +324,15 @@ namespace WinAI.Views
             providerCombo.SelectedIndex = selectedIndex;
             stack.Children.Add(providerCombo);
 
+            string targetId = preselectedProviderId ?? providers[selectedIndex].Id;
+            bool targetHasKey = _vaultService.HasApiKey(targetId);
             var keyBox = new PasswordBox
             {
                 Header = "API Key",
-                PlaceholderText = "Paste your API key here",
+                PlaceholderText = targetHasKey ? "Key configured (enter new key to replace)" : "Paste your API key here",
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, 0, 0, 8)
             };
-
-            string targetId = preselectedProviderId ?? providers[selectedIndex].Id;
-            if (_vaultService.HasApiKey(targetId))
-            {
-                keyBox.Password = _vaultService.GetApiKey(targetId);
-            }
 
             var testBtn = new Button
             {
@@ -341,6 +354,11 @@ namespace WinAI.Views
                 if (providerCombo.SelectedItem is ComboBoxItem cbiSel && cbiSel.Tag is string testPid)
                 {
                     string k = keyBox.Password?.Trim();
+                    if (string.IsNullOrEmpty(k) && _vaultService.HasApiKey(testPid))
+                    {
+                        k = _vaultService.GetApiKey(testPid);
+                    }
+
                     if (string.IsNullOrEmpty(k))
                     {
                         statusTextBlock.Text = "Please paste or enter an API key first.";
@@ -361,8 +379,11 @@ namespace WinAI.Views
                     {
                         statusTextBlock.Text = $"✓ {testRes.Message}";
                         statusTextBlock.Foreground = new SolidColorBrush(Windows.UI.Colors.LightGreen);
-                        _vaultService.SaveApiKey(testPid, k);
-                        RefreshAllProviders();
+                        if (!string.IsNullOrEmpty(keyBox.Password?.Trim()))
+                        {
+                            _vaultService.SaveApiKey(testPid, keyBox.Password.Trim());
+                            RefreshAllProviders();
+                        }
                     }
                     else
                     {
@@ -377,14 +398,10 @@ namespace WinAI.Views
                 if (providerCombo.SelectedItem is ComboBoxItem cbi && cbi.Tag is string pid)
                 {
                     statusTextBlock.Visibility = Visibility.Collapsed;
-                    if (_vaultService.HasApiKey(pid))
-                    {
-                        keyBox.Password = _vaultService.GetApiKey(pid);
-                    }
-                    else
-                    {
-                        keyBox.Password = string.Empty;
-                    }
+                    keyBox.Password = string.Empty;
+                    keyBox.PlaceholderText = _vaultService.HasApiKey(pid) 
+                        ? "Key configured (enter new key to replace)" 
+                        : "Paste your API key here";
                 }
             };
 
@@ -418,11 +435,9 @@ namespace WinAI.Views
                         RefreshAllProviders();
                         ShowNotification($"{GetDisplayName(pid)} key saved & models synced!");
                     }
-                    else
+                    else if (!_vaultService.HasApiKey(pid))
                     {
-                        _vaultService.DeleteApiKey(pid);
-                        RefreshAllProviders();
-                        ShowNotification($"{GetDisplayName(pid)} key cleared.");
+                        ShowNotification("No key was entered.");
                     }
                 }
             }
@@ -435,6 +450,7 @@ namespace WinAI.Views
                 case "openai": return "OpenAI";
                 case "gemini": return "Gemini";
                 case "claude": return "Claude";
+                case "openrouter": return "OpenRouter";
                 case "perplexity": return "Perplexity";
                 case "deepseek": return "DeepSeek";
                 case "xai": return "xAI";
@@ -706,9 +722,9 @@ namespace WinAI.Views
 
         // Drawer Menu Item Handlers
         private void DrawerHome_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(HomePage));
-        private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage));
+        private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage), "new");
         private void DrawerConversations_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ConversationsPage));
-        private void DrawerProviders_Click(object sender, RoutedEventArgs e) => NavDrawer.IsPaneOpen = false;
+        private void DrawerProviders_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(AiProvidersPage));
         private void DrawerVault_Click(object sender, RoutedEventArgs e) => NavDrawer.IsPaneOpen = false;
         private void DrawerPromptKit_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(PromptKitPage));
         private void DrawerSettings_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(SettingsPage));

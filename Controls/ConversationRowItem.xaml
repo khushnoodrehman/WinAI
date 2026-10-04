@@ -4,13 +4,43 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:WinAI.Controls"
     mc:Ignorable="d">
 
     <Grid x:Name="RootGrid"
           Background="Transparent"
-          PointerEntered="RootGrid_PointerEntered"
+          PointerPressed="RootGrid_PointerPressed"
+          PointerReleased="RootGrid_PointerReleased"
           PointerExited="RootGrid_PointerExited"
+          PointerCanceled="RootGrid_PointerCanceled"
+          PointerCaptureLost="RootGrid_PointerCaptureLost"
           Tapped="RootGrid_Tapped">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -28,18 +58,13 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Brand Icon Box -->
-            <Border Grid.Column="0"
-                    x:Name="IconBorder"
-                    Width="40"
-                    Height="40"
-                    CornerRadius="8"
-                    VerticalAlignment="Center"
-                    Margin="0,0,14,0">
-                <ContentControl x:Name="IconContentPresenter"
-                                HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center" />
-            </Border>
+            <!-- Reusable Unified Brand Icon -->
+            <controls:WinAIProviderIcon x:Name="ConversationProviderIcon"
+                                        Grid.Column="0"
+                                        IconSize="40"
+                                        BadgeCornerRadius="8"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,14,0" />
 
             <!-- Title & Messages -->
             <StackPanel Grid.Column="1"
@@ -103,12 +128,12 @@
                                FontSize="13"
                                Foreground="{ThemeResource AppTextSecondaryBrush}" />
                     <Button.Flyout>
-                        <MenuFlyout>
+                        <MenuFlyout MenuFlyoutPresenterStyle="{StaticResource ModernMenuFlyoutStyle}">
                             <MenuFlyoutItem Text="Open" Click="MenuOpen_Click" />
                             <MenuFlyoutItem Text="Rename" Click="MenuRename_Click" />
                             <MenuFlyoutItem x:Name="PinMenuItem" Text="Pin" Click="MenuPin_Click" />
                             <MenuFlyoutSeparator />
-                            <MenuFlyoutItem Text="Delete" Foreground="#E04040" Click="MenuDelete_Click" />
+                            <MenuFlyoutItem Text="Delete" Foreground="#EF4444" Click="MenuDelete_Click" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

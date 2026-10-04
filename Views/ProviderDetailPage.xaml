@@ -1,0 +1,372 @@
+<Page
+    x:Class="WinAI.Views.ProviderDetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:WinAI.Controls"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource AppPageBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <!-- Row 0: Notification Banner -->
+            <RowDefinition Height="Auto" />
+            <!-- Row 1: Top App Bar -->
+            <RowDefinition Height="Auto" />
+            <!-- Row 2: Scrollable Content -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Notification Banner -->
+        <Border Grid.Row="0"
+                x:Name="NotificationBanner"
+                Background="{ThemeResource AppAccentBrush}"
+                Padding="16,10"
+                Canvas.ZIndex="100"
+                Visibility="Collapsed">
+            <TextBlock x:Name="NotificationText"
+                       Text="Notification"
+                       Foreground="White"
+                       FontSize="13"
+                       FontFamily="Segoe UI"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center" />
+        </Border>
+
+        <!-- ==================== TOP APP BAR ==================== -->
+        <Grid Grid.Row="1"
+              Height="50"
+              Background="{ThemeResource AppTopBarBackgroundBrush}"
+              Padding="12,0,12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Back Button -->
+            <Button Grid.Column="0"
+                    Width="40"
+                    Height="40"
+                    Background="Transparent"
+                    Padding="0"
+                    Click="BackButton_Click"
+                    ToolTipService.ToolTip="Back">
+                <TextBlock Text="&#xE72B;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="16"
+                           Foreground="{ThemeResource AppTextPrimaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Button>
+
+            <!-- Title Header -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="8,0,0,0">
+                <TextBlock x:Name="HeaderTitleText"
+                           Text="Provider Details"
+                           FontSize="19"
+                           FontWeight="SemiBold"
+                           FontFamily="Segoe UI"
+                           Foreground="{ThemeResource AppTextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Configure Key Shortcut -->
+            <Button Grid.Column="2"
+                    Width="40"
+                    Height="40"
+                    Background="Transparent"
+                    Padding="0"
+                    Click="ConfigureKey_Click"
+                    ToolTipService.ToolTip="Configure API Key in Key Vault">
+                <TextBlock Text="&#xE72E;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="17"
+                           Foreground="{ThemeResource AppTextPrimaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- ==================== MAIN SCROLLABLE CONTENT ==================== -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Padding="0,14,0,24">
+                <!-- Provider Summary Card -->
+                <Grid Margin="18,0,18,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Icon -->
+                    <controls:WinAIProviderIcon x:Name="ProviderBrandIcon"
+                                                Grid.Column="0"
+                                                IconSize="44"
+                                                BadgeCornerRadius="10"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,14,0" />
+
+                    <!-- Info -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="ProviderNameText"
+                                   Text="OpenAI"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   FontFamily="Segoe UI"
+                                   Foreground="{ThemeResource AppTextPrimaryBrush}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="ProviderStatusDot"
+                                       Text="●"
+                                       FontSize="10"
+                                       Foreground="{ThemeResource WinAISuccessBrush}"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="ProviderStatusText"
+                                       Text="Configured in Key Vault"
+                                       FontSize="13"
+                                       FontFamily="Segoe UI"
+                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Actions Strip -->
+                <Grid Margin="18,0,18,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Refresh Models -->
+                    <Button Grid.Column="0"
+                            x:Name="RefreshModelsButton"
+                            HorizontalAlignment="Stretch"
+                            Padding="6,8"
+                            Background="{ThemeResource AppSurfaceBrush}"
+                            BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                            BorderThickness="1"
+                            Click="RefreshModelsButton_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE72C;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource AppAccentBrush}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Refresh"
+                                       FontSize="12"
+                                       FontFamily="Segoe UI"
+                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Test All Models -->
+                    <Button Grid.Column="2"
+                            x:Name="TestAllButton"
+                            HorizontalAlignment="Stretch"
+                            Padding="6,8"
+                            Background="{ThemeResource AppSurfaceBrush}"
+                            BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                            BorderThickness="1"
+                            Click="TestAllButton_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE768;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource AppAccentBrush}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Test All"
+                                       FontSize="12"
+                                       FontFamily="Segoe UI"
+                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Configure Key Vault -->
+                    <Button Grid.Column="4"
+                            x:Name="KeyVaultButton"
+                            HorizontalAlignment="Stretch"
+                            Padding="6,8"
+                            Background="{ThemeResource AppSurfaceBrush}"
+                            BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                            BorderThickness="1"
+                            Click="ConfigureKey_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE72E;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource AppAccentBrush}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Key Vault"
+                                       FontSize="12"
+                                       FontFamily="Segoe UI"
+                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Section Header: Models -->
+                <Grid Margin="18,0,18,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="MODELS"
+                               FontSize="11.5"
+                               FontWeight="Bold"
+                               FontFamily="Segoe UI"
+                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Column="1"
+                               x:Name="ModelsCountText"
+                               Text="0 models"
+                               FontSize="12"
+                               FontFamily="Segoe UI"
+                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Models Flat ListView -->
+                <ListView x:Name="ModelsListView"
+                          ItemContainerStyle="{StaticResource WinAIListViewItemStyle}"
+                          SelectionMode="None"
+                          Padding="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid MinHeight="70"
+                                  Background="Transparent"
+                                  BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                  BorderThickness="0,0,0,1"
+                                  Padding="18,8,18,8">
+                                <Grid.ColumnDefinitions>
+                                    <!-- Col 0: Status Indicator -->
+                                    <ColumnDefinition Width="Auto" />
+                                    <!-- Col 1: Model Details -->
+                                    <ColumnDefinition Width="*" />
+                                    <!-- Col 2: Action Button -->
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Availability Indicator Icon or Progress -->
+                                <Grid Grid.Column="0"
+                                      Width="24"
+                                      Height="24"
+                                      Margin="0,0,12,0"
+                                      VerticalAlignment="Center">
+                                    <!-- Testing Spinner -->
+                                    <ProgressRing IsActive="{Binding IsTesting}"
+                                                  Width="18"
+                                                  Height="18"
+                                                  Foreground="{ThemeResource AppAccentBrush}"
+                                                  Visibility="{Binding TestingVisibility}" />
+
+                                    <!-- Status Dot Glyph -->
+                                    <TextBlock Text="{Binding StatusGlyph}"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Foreground="{Binding StatusBrush}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding StatusGlyphVisibility}" />
+                                </Grid>
+
+                                <!-- Model Info -->
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"
+                                               FontFamily="Segoe UI"
+                                               Foreground="{ThemeResource AppTextPrimaryBrush}" />
+
+                                    <TextBlock Text="{Binding Id}"
+                                               FontSize="11.5"
+                                               FontFamily="Segoe UI"
+                                               Foreground="{ThemeResource AppTextMutedBrush}"
+                                               Margin="0,1,0,0" />
+
+                                    <!-- Status + Validation Time Line -->
+                                    <StackPanel Orientation="Horizontal"
+                                                Margin="0,3,0,0"
+                                                VerticalAlignment="Center">
+                                        <!-- Status Badge -->
+                                        <Border Background="{Binding BadgeBackground}"
+                                                CornerRadius="3"
+                                                Padding="5,1,5,1"
+                                                Margin="0,0,6,0">
+                                            <TextBlock Text="{Binding FormattedStatus}"
+                                                       FontSize="10.5"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding BadgeForeground}" />
+                                        </Border>
+
+                                        <!-- Validation Time -->
+                                        <TextBlock Text="{Binding FormattedValidationTime}"
+                                                   FontSize="11.5"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Optional error details -->
+                                    <TextBlock Text="{Binding StatusDetails}"
+                                               FontSize="11"
+                                               FontFamily="Segoe UI"
+                                               Foreground="{ThemeResource WinAIErrorBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,2,0,0"
+                                               Visibility="{Binding ErrorDetailsVisibility}" />
+                                </StackPanel>
+
+                                <!-- Test Model Button -->
+                                <Button Grid.Column="2"
+                                        x:Name="TestModelRowButton"
+                                        Style="{StaticResource WinAIRowButtonStyle}"
+                                        Padding="10,6"
+                                        Background="{ThemeResource AppSurfaceBrush}"
+                                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        VerticalAlignment="Center"
+                                        Click="TestModelRowButton_Click"
+                                        Tag="{Binding Id}"
+                                        IsEnabled="{Binding IsNotTesting}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE768;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource AppAccentBrush}"
+                                                   Margin="0,0,4,0"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Test"
+                                                   FontSize="12"
+                                                   FontFamily="Segoe UI"
+                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

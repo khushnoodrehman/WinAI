@@ -30,15 +30,11 @@ namespace WinAI.Services.Providers
                     if (item.Id.Contains("gpt-4o")) caps |= ModelCapabilities.Vision;
                     if (item.Id.StartsWith("o1") || item.Id.StartsWith("o3")) caps |= ModelCapabilities.Reasoning;
 
-                    list.Add(new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description));
+                    var desc = new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description);
+                    desc.IsAvailable = item.IsAvailable;
+                    desc.Status = item.Status;
+                    list.Add(desc);
                 }
-            }
-            else
-            {
-                list.Add(new AiModelDescriptor("gpt-4o", "GPT-4o", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("gpt-4o-mini", "GPT-4o Mini", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("o1-mini", "o1 Mini", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Reasoning, configured));
-                list.Add(new AiModelDescriptor("gpt-3.5-turbo", "GPT-3.5 Turbo", Id, DisplayName, ModelCapabilities.Text, configured));
             }
 
             return list;
@@ -57,11 +53,13 @@ namespace WinAI.Services.Providers
 
             var messagesPayload = new List<object>();
 
-            // Include system prompt
+            // Include system prompt with accurate real-time date
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
             messagesPayload.Add(new
             {
                 role = "system",
-                content = "You are WinAI, an intelligent and helpful AI assistant running on Windows 10 Mobile."
+                content = $"You are WinAI, an intelligent and helpful AI assistant running on Windows 10 Mobile. The accurate real-time date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this exact current date and time when asked about today's date, day, year, or time. If asked about live breaking news, live sports match scores, or real-time events that occurred after your knowledge training cutoff, state your knowledge cutoff date honestly and advise checking the browser for live updates, rather than guessing or denying that events took place."
             });
 
             var context = conversationHistory.Skip(Math.Max(0, conversationHistory.Count - 16));

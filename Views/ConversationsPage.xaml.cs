@@ -307,6 +307,10 @@ namespace WinAI.Views
                 Text = session.Title ?? string.Empty,
                 Margin = new Thickness(0, 10, 0, 0)
             };
+            if (Application.Current.Resources.TryGetValue("WinAIStandardTextBoxStyle", out object tbStyle))
+            {
+                renameBox.Style = tbStyle as Style;
+            }
             renameBox.GotFocus += (s, ev) => renameBox.SelectAll();
 
             var dialog = new ContentDialog
@@ -476,7 +480,7 @@ namespace WinAI.Views
         private void DrawerProviders_Click(object sender, RoutedEventArgs e)
         {
             NavDrawer.IsPaneOpen = false;
-            Frame.Navigate(typeof(KeyVaultPage));
+            Frame.Navigate(typeof(AiProvidersPage));
         }
 
         private void DrawerVault_Click(object sender, RoutedEventArgs e)

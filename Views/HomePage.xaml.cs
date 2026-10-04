@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Windows.Foundation.Metadata;
 using Windows.Storage;
@@ -11,6 +12,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using WinAI.Controls;
 using WinAI.Models;
 using WinAI.Services;
 using WinAI.Services.Providers;
@@ -22,9 +24,17 @@ namespace WinAI.Views
         private readonly ThemeService _themeService = ThemeService.Instance;
         private readonly AiProviderRegistry _providerRegistry = AiProviderRegistry.Instance;
 
+        private static readonly bool _hasMenuFlyoutIcon = 
+            ApiInformation.IsPropertyPresent("Windows.UI.Xaml.Controls.MenuFlyoutItem", "Icon");
+
         private string _selectedProviderId = "openai";
         private string _selectedModelId = "gpt-4o";
         private string _selectedModelDisplayName = "GPT-4o";
+
+        private string _pendingImageBase64;
+        private string _pendingImageMimeType;
+        private string _pendingImageFileName;
+        private readonly WinAIAttachmentFlyout _attachmentFlyout = new WinAIAttachmentFlyout();
 
         private DispatcherTimer _voiceTimer;
         private int _voiceSeconds;
@@ -35,6 +45,10 @@ namespace WinAI.Views
         {
             this.InitializeComponent();
             InitializeGreeting();
+            LoadDefaultModelFromSettings();
+
+            _attachmentFlyout.ImageAttached += OnHomeAttachmentImageAttached;
+            _attachmentFlyout.AttachmentError += OnHomeAttachmentError;
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -51,6 +65,7 @@ namespace WinAI.Views
             // Load default model from Settings and populate model picker
             LoadDefaultModelFromSettings();
             BuildModelPickerFlyout();
+            AppSettingsService.Instance.DefaultModelChanged += OnDefaultModelChanged;
 
             await RefreshRecentConversationsAsync();
         }
@@ -59,15 +74,24 @@ namespace WinAI.Views
         {
             base.OnNavigatedFrom(e);
 
+            AppSettingsService.Instance.DefaultModelChanged -= OnDefaultModelChanged;
+
             _voiceTimer?.Stop();
             if (_isRecognizingVoice)
             {
+                UnbindVoiceEvents();
                 var ignore = _voiceService.CancelRecordingAsync();
                 _isRecognizingVoice = false;
             }
 
             var navManager = SystemNavigationManager.GetForCurrentView();
             navManager.BackRequested -= HomePage_BackRequested;
+        }
+
+        private void OnDefaultModelChanged(object sender, EventArgs e)
+        {
+            LoadDefaultModelFromSettings();
+            BuildModelPickerFlyout();
         }
 
         private void HomePage_BackRequested(object sender, BackRequestedEventArgs e)
@@ -134,24 +158,16 @@ namespace WinAI.Views
         {
             try
             {
-                var localSettings = ApplicationData.Current.LocalSettings.Values;
-                string defaultProvider = localSettings.ContainsKey("App_DefaultProvider")
-                    ? localSettings["App_DefaultProvider"] as string
-                    : "OpenAI";
-                string defaultModel = localSettings.ContainsKey("App_DefaultModel")
-                    ? localSettings["App_DefaultModel"] as string
-                    : "GPT-4o";
-
-                string normProvider = AiProviderRegistry.NormalizeProviderId(defaultProvider);
-                var descriptor = _providerRegistry.GetModel(normProvider, defaultModel);
-
+                var descriptor = AppSettingsService.Instance.GetDefaultModelDescriptor();
                 if (descriptor != null)
                 {
                     SetSelectedModel(descriptor.ProviderId, descriptor.Id, descriptor.DisplayName);
                 }
                 else
                 {
-                    SetSelectedModel(normProvider, defaultModel ?? "gpt-4o", defaultModel ?? "GPT-4o");
+                    string providerId = AppSettingsService.Instance.DefaultProviderId;
+                    string modelId = AppSettingsService.Instance.DefaultModelId;
+                    SetSelectedModel(providerId, modelId, modelId);
                 }
             }
             catch
@@ -172,44 +188,22 @@ namespace WinAI.Views
             }
 
             UpdateModelIconVisuals(_selectedProviderId);
+
+            if (!string.IsNullOrEmpty(_pendingImageBase64))
+            {
+                var desc = _providerRegistry.GetModel(_selectedProviderId, _selectedModelId);
+                if (desc != null && !desc.SupportsVision)
+                {
+                    ShowHomeVoiceErrorBanner("This model does not support image input.");
+                }
+            }
         }
 
         private void UpdateModelIconVisuals(string providerId)
         {
-            if (HomeModelIconContainer == null || HomeModelIconGlyph == null) return;
-
-            string norm = AiProviderRegistry.NormalizeProviderId(providerId);
-            switch (norm)
-            {
-                case "google":
-                case "gemini":
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 78, 130, 238));
-                    HomeModelIconGlyph.Text = "\uE80A";
-                    break;
-                case "anthropic":
-                case "claude":
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 217, 119, 87));
-                    HomeModelIconGlyph.Text = "\uE749";
-                    break;
-                case "deepseek":
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 29, 78, 216));
-                    HomeModelIconGlyph.Text = "\uE756";
-                    break;
-                case "xai":
-                case "grok":
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 30, 41, 59));
-                    HomeModelIconGlyph.Text = "\uE7C3";
-                    break;
-                case "perplexity":
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 32, 85, 101));
-                    HomeModelIconGlyph.Text = "\uE721";
-                    break;
-                case "openai":
-                default:
-                    HomeModelIconContainer.Background = new SolidColorBrush(Color.FromArgb(255, 16, 163, 127));
-                    HomeModelIconGlyph.Text = "\uE8BD";
-                    break;
-            }
+            if (HomeModelProviderIcon == null) return;
+            HomeModelProviderIcon.ProviderId = providerId;
+            HomeModelProviderIcon.UpdateVisuals();
         }
 
         private void BuildModelPickerFlyout()
@@ -221,31 +215,117 @@ namespace WinAI.Views
             var allModels = _providerRegistry.GetAllModels();
             if (allModels == null || allModels.Count == 0) return;
 
+            // Requirement 10: If user's configured model becomes unavailable, do NOT silently switch.
+            // Instead, show a clear message: "Your selected model is unavailable."
+            bool isCurrentModelAvailable = allModels.Any(m => 
+                string.Equals(m.ProviderId, _selectedProviderId, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(m.Id, _selectedModelId, StringComparison.OrdinalIgnoreCase) &&
+                m.IsAvailable);
+
+            if (!isCurrentModelAvailable)
+            {
+                if (HomeModelUnavailableBanner != null)
+                {
+                    HomeModelUnavailableBanner.Visibility = Visibility.Visible;
+                    HomeModelUnavailableText.Text = $"Selected model '{_selectedModelDisplayName}' is unavailable. Please select another model.";
+                }
+            }
+            else
+            {
+                if (HomeModelUnavailableBanner != null)
+                {
+                    HomeModelUnavailableBanner.Visibility = Visibility.Collapsed;
+                }
+            }
+
+            // Requirement 9: Do NOT show unavailable models in Home model selector
+            var availableModels = allModels.Where(m => m.IsAvailable).ToList();
+
             string lastProvider = null;
-            foreach (var m in allModels)
+            bool isFirstSection = true;
+            foreach (var m in availableModels)
             {
                 if (m.ProviderName != lastProvider)
                 {
                     lastProvider = m.ProviderName;
+                    if (!isFirstSection)
+                    {
+                        HomeModelPickerFlyout.Items.Add(new MenuFlyoutSeparator());
+                    }
+                    isFirstSection = false;
+
                     var headerItem = new MenuFlyoutItem
                     {
-                        Text = $"— {m.ProviderName} —",
-                        IsEnabled = false,
-                        FontSize = 12
+                        Text = m.ProviderName,
+                        IsEnabled = false
                     };
+                    if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutHeaderStyle", out object headerStyle) && headerStyle is Style hStyle)
+                    {
+                        headerItem.Style = hStyle;
+                    }
                     HomeModelPickerFlyout.Items.Add(headerItem);
                 }
 
+                bool isSelected = string.Equals(m.ProviderId, _selectedProviderId, StringComparison.OrdinalIgnoreCase) &&
+                                  string.Equals(m.Id, _selectedModelId, StringComparison.OrdinalIgnoreCase);
+
                 var item = new MenuFlyoutItem
                 {
-                    Text = m.DisplayName,
                     Tag = m
                 };
+                if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutItemStyle", out object itemStyle) && itemStyle is Style iStyle)
+                {
+                    item.Style = iStyle;
+                }
+
+                var accentBrush = Application.Current.Resources["AppAccentBrush"] as SolidColorBrush;
+                if (_hasMenuFlyoutIcon)
+                {
+                    item.Text = m.DisplayName;
+                    if (isSelected)
+                    {
+                        item.Icon = new FontIcon
+                        {
+                            Glyph = "\uE73E",
+                            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                            Foreground = accentBrush,
+                            FontSize = 13
+                        };
+                        if (accentBrush != null)
+                        {
+                            item.Foreground = accentBrush;
+                        }
+                    }
+                    else
+                    {
+                        item.Icon = new FontIcon
+                        {
+                            Glyph = "\uE73E",
+                            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                            Opacity = 0,
+                            FontSize = 13
+                        };
+                    }
+                }
+                else
+                {
+                    item.Text = isSelected ? $"\uE73E  {m.DisplayName}" : $"    {m.DisplayName}";
+                    if (isSelected && accentBrush != null)
+                    {
+                        item.Foreground = accentBrush;
+                    }
+                }
+
                 item.Click += (s, args) =>
                 {
                     if (s is MenuFlyoutItem clicked && clicked.Tag is AiModelDescriptor desc)
                     {
                         SetSelectedModel(desc.ProviderId, desc.Id, desc.DisplayName);
+                        AppSettingsService.Instance.SetDefaultModel(desc.ProviderId, desc.Id, desc.DisplayName);
+                        if (HomeModelUnavailableBanner != null)
+                        {
+                            HomeModelUnavailableBanner.Visibility = Visibility.Collapsed;
+                        }
                     }
                 };
                 HomeModelPickerFlyout.Items.Add(item);
@@ -282,18 +362,161 @@ namespace WinAI.Views
 
         private void SubmitPrompt()
         {
-            string prompt = HomePromptTextBox.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(prompt)) return;
+            string prompt = HomePromptTextBox.Text?.Trim() ?? string.Empty;
+            bool hasImage = !string.IsNullOrEmpty(_pendingImageBase64);
+
+            if (string.IsNullOrWhiteSpace(prompt) && !hasImage) return;
+
+            var descriptor = _providerRegistry.GetModel(_selectedProviderId, _selectedModelId);
+            if (hasImage && descriptor != null && !descriptor.SupportsVision)
+            {
+                ShowHomeVoiceErrorBanner("This model does not support image input.");
+                return;
+            }
+
+            string sendingImageBase64 = _pendingImageBase64;
+            string sendingImageMime = _pendingImageMimeType;
+            string sendingImageFileName = _pendingImageFileName;
 
             HomePromptTextBox.Text = string.Empty;
+            ClearHomePendingAttachment();
 
-            // Direct transition into Chat screen with prompt and active model
-            Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(prompt, _selectedProviderId, _selectedModelId));
+            // Direct transition into Chat screen with prompt, active model, and attachment
+            Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(prompt, _selectedProviderId, _selectedModelId, sendingImageBase64, sendingImageMime, sendingImageFileName));
+        }
+
+        #endregion
+
+        #region Attachments
+
+        private void HomeAttachButton_Click(object sender, RoutedEventArgs e)
+        {
+            var descriptor = _providerRegistry.GetModel(_selectedProviderId, _selectedModelId);
+            bool supportsVision = descriptor?.SupportsVision ?? true;
+            _attachmentFlyout.ShowAt((FrameworkElement)sender, supportsVision);
+        }
+
+        private void OnHomeAttachmentImageAttached(object sender, AttachmentResult result)
+        {
+            if (result == null) return;
+
+            _pendingImageBase64 = result.Base64Data;
+            _pendingImageMimeType = result.MimeType;
+            _pendingImageFileName = result.FileName;
+            if (HomeAttachmentThumbnailImage != null) HomeAttachmentThumbnailImage.Source = result.Thumbnail;
+            if (HomeAttachmentFileNameText != null) HomeAttachmentFileNameText.Text = result.FileName;
+            if (HomeAttachmentPreviewBar != null) HomeAttachmentPreviewBar.Visibility = Visibility.Visible;
+        }
+
+        private void OnHomeAttachmentError(object sender, string errorMessage)
+        {
+            ShowHomeVoiceErrorBanner(errorMessage);
+        }
+
+        private void HomeRemoveAttachment_Click(object sender, RoutedEventArgs e)
+        {
+            ClearHomePendingAttachment();
+        }
+
+        private void ClearHomePendingAttachment()
+        {
+            _pendingImageBase64 = null;
+            _pendingImageMimeType = null;
+            _pendingImageFileName = null;
+            if (HomeAttachmentThumbnailImage != null) HomeAttachmentThumbnailImage.Source = null;
+            if (HomeAttachmentPreviewBar != null) HomeAttachmentPreviewBar.Visibility = Visibility.Collapsed;
         }
 
         #endregion
 
         #region Voice Recording & Transcription
+
+        private DispatcherTimer _voiceBannerTimer;
+
+        private void ShowHomeVoiceErrorBanner(string message)
+        {
+            if (HomeVoiceStatusBanner == null || HomeVoiceStatusBannerText == null) return;
+            HomeVoiceStatusBanner.Background = (Brush)Application.Current.Resources["WinAIErrorBrush"];
+            HomeVoiceStatusBannerIcon.Text = "\uE783";
+            HomeVoiceStatusBannerText.Text = message;
+            HomeVoiceStatusBanner.Visibility = Visibility.Visible;
+
+            if (_voiceBannerTimer == null)
+            {
+                _voiceBannerTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+                _voiceBannerTimer.Tick += (s, e) =>
+                {
+                    _voiceBannerTimer.Stop();
+                    if (HomeVoiceStatusBanner != null)
+                    {
+                        HomeVoiceStatusBanner.Visibility = Visibility.Collapsed;
+                    }
+                };
+            }
+
+            _voiceBannerTimer.Stop();
+            _voiceBannerTimer.Start();
+        }
+
+        private void BindVoiceEvents()
+        {
+            _voiceService.HypothesisReceived -= OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged -= OnVoiceStatusChanged;
+            _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
+
+            _voiceService.HypothesisReceived += OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged += OnVoiceStatusChanged;
+            _voiceService.SessionCompleted += OnVoiceSessionCompleted;
+        }
+
+        private void UnbindVoiceEvents()
+        {
+            _voiceService.HypothesisReceived -= OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged -= OnVoiceStatusChanged;
+            _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
+        }
+
+        private async void OnVoiceHypothesisReceived(object sender, string combinedHypothesis)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                if (HomeVoiceHypothesisText != null)
+                {
+                    if (string.IsNullOrWhiteSpace(combinedHypothesis))
+                    {
+                        HomeVoiceHypothesisText.Text = "Speak now...";
+                        HomeVoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
+                    }
+                    else
+                    {
+                        HomeVoiceHypothesisText.Text = $"\"{combinedHypothesis}\"";
+                        HomeVoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextPrimaryBrush"];
+                    }
+                }
+            });
+        }
+
+        private async void OnVoiceStatusChanged(object sender, string status)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                if (HomeVoiceRecordingStatusText != null && !string.IsNullOrWhiteSpace(status))
+                {
+                    HomeVoiceRecordingStatusText.Text = status;
+                }
+            });
+        }
+
+        private async void OnVoiceSessionCompleted(object sender, VoiceRecognitionResult result)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                FinishVoiceRecognition(result);
+            });
+        }
 
         private async void HomeVoiceRecordButton_Click(object sender, RoutedEventArgs e)
         {
@@ -304,60 +527,109 @@ namespace WinAI.Views
             HomeVoiceRecordingGrid.Visibility = Visibility.Visible;
             _voiceSeconds = 0;
             HomeVoiceRecordingTimerText.Text = "0:00";
+            HomeVoiceRecordingStatusText.Text = "Listening...";
+            HomeVoiceHypothesisText.Text = "Speak now...";
+            HomeVoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
+            HomeDoneVoiceRecordingButton.IsEnabled = true;
 
             if (_voiceTimer == null)
             {
-                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
                 _voiceTimer.Tick += (s, args) =>
                 {
                     _voiceSeconds++;
-                    HomeVoiceRecordingTimerText.Text = $"{_voiceSeconds / 60}:{(_voiceSeconds % 60):D2}";
+                    int totalSeconds = _voiceSeconds / 2;
+                    HomeVoiceRecordingTimerText.Text = $"{totalSeconds / 60}:{(totalSeconds % 60):D2}";
+
+                    if (HomeVoicePulseDot != null)
+                    {
+                        HomeVoicePulseDot.Opacity = (_voiceSeconds % 2 == 0) ? 0.40 : 0.15;
+                    }
+                    if (HomeVoiceWave1 != null && HomeVoiceWave2 != null && HomeVoiceWave3 != null && HomeVoiceWave4 != null)
+                    {
+                        int step = _voiceSeconds % 4;
+                        HomeVoiceWave1.Height = step == 0 ? 12 : (step == 1 ? 6 : 9);
+                        HomeVoiceWave2.Height = step == 1 ? 16 : (step == 2 ? 8 : 13);
+                        HomeVoiceWave3.Height = step == 2 ? 14 : (step == 3 ? 7 : 10);
+                        HomeVoiceWave4.Height = step == 3 ? 10 : (step == 0 ? 5 : 8);
+                    }
                 };
             }
             _voiceTimer.Start();
 
-            await _voiceService.StartRecordingAsync();
+            BindVoiceEvents();
+            var startResult = await _voiceService.StartRecordingAsync();
+            if (!startResult.Success)
+            {
+                _voiceTimer?.Stop();
+                UnbindVoiceEvents();
+                HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                HomeNormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
+
+                ShowHomeVoiceErrorBanner(startResult.ErrorMessage);
+            }
         }
 
         private async void HomeCancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
         {
             _voiceTimer?.Stop();
+            UnbindVoiceEvents();
             await _voiceService.CancelRecordingAsync();
 
             HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
             HomeNormalInputGrid.Visibility = Visibility.Visible;
             _isRecognizingVoice = false;
+
+            HomePromptTextBox.Focus(FocusState.Programmatic);
         }
 
-        private async void HomeSendVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        private async void HomeDoneVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isRecognizingVoice) return;
+
+            _voiceTimer?.Stop();
+            HomeVoiceRecordingStatusText.Text = "Transcribing...";
+            HomeDoneVoiceRecordingButton.IsEnabled = false;
+
+            var result = await _voiceService.StopRecordingAndTranscribeAsync();
+            FinishVoiceRecognition(result);
+        }
+
+        private void FinishVoiceRecognition(VoiceRecognitionResult result)
         {
             _voiceTimer?.Stop();
-            HomeVoiceRecordingTimerText.Text = "Transcribing...";
-            HomeSendVoiceRecordingButton.IsEnabled = false;
+            UnbindVoiceEvents();
 
-            try
+            HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            HomeNormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+            HomeDoneVoiceRecordingButton.IsEnabled = true;
+
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
             {
-                string transcribedText = await _voiceService.StopRecordingAndTranscribeAsync();
-
-                HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
-                HomeNormalInputGrid.Visibility = Visibility.Visible;
-                _isRecognizingVoice = false;
-
-                if (!string.IsNullOrWhiteSpace(transcribedText))
+                string textToInsert = result.Text.Trim();
+                if (string.IsNullOrWhiteSpace(HomePromptTextBox.Text))
                 {
-                    // Direct transition into Chat screen with transcribed prompt and active model to send
-                    Frame.Navigate(typeof(MainPage), new ChatLaunchArgs(transcribedText, _selectedProviderId, _selectedModelId));
+                    HomePromptTextBox.Text = textToInsert;
                 }
+                else
+                {
+                    HomePromptTextBox.Text = (HomePromptTextBox.Text.Trim() + " " + textToInsert).Trim();
+                }
+
+                HomePromptTextBox.SelectionStart = HomePromptTextBox.Text.Length;
+                HomePromptTextBox.Focus(FocusState.Programmatic);
             }
-            catch
+            else if (result != null && !result.Success && !string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
-                HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
-                HomeNormalInputGrid.Visibility = Visibility.Visible;
-                _isRecognizingVoice = false;
+                ShowHomeVoiceErrorBanner(result.ErrorMessage);
+                HomePromptTextBox.Focus(FocusState.Programmatic);
             }
-            finally
+            else
             {
-                HomeSendVoiceRecordingButton.IsEnabled = true;
+                ShowHomeVoiceErrorBanner("Could not understand the recording.");
+                HomePromptTextBox.Focus(FocusState.Programmatic);
             }
         }
 
@@ -496,7 +768,7 @@ namespace WinAI.Views
             {
                 NavDrawer.IsPaneOpen = false;
             }
-            Frame.Navigate(typeof(KeyVaultPage));
+            Frame.Navigate(typeof(AiProvidersPage));
         }
 
         private void KeyVaultItem_Click(object sender, RoutedEventArgs e)

@@ -199,11 +199,13 @@ namespace WinAI.Services
 
             var messagesPayload = new List<object>();
 
-            // Include system instruction
+            // Include system instruction with accurate real-time date
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
             messagesPayload.Add(new
             {
                 role = "system",
-                content = "You are a helpful, intelligent AI assistant running inside WinAI on Windows 10 Mobile."
+                content = $"You are a helpful, intelligent AI assistant running inside WinAI on Windows 10 Mobile. The current date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this accurate real-time date and time whenever asked about dates, days, years, or current time."
             });
 
             // Include last 12 messages for conversation context
@@ -355,12 +357,30 @@ namespace WinAI.Services
                 });
             }
 
-            var requestBody = new
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
+            string systemPrompt = $"You are WinAI, an intelligent and helpful AI assistant running on Windows 10 Mobile. The current date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this accurate real-time date and time whenever asked about dates, days, years, or current time.";
+
+            var requestBodyWithSearch = new
             {
-                contents = contentsPayload
+                system_instruction = new
+                {
+                    parts = new object[]
+                    {
+                        new { text = systemPrompt }
+                    }
+                },
+                contents = contentsPayload,
+                tools = new object[]
+                {
+                    new
+                    {
+                        google_search = new { }
+                    }
+                }
             };
 
-            string jsonContent = JsonConvert.SerializeObject(requestBody);
+            string jsonContent = JsonConvert.SerializeObject(requestBodyWithSearch);
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
@@ -369,20 +389,98 @@ namespace WinAI.Services
                 HttpResponseMessage response = await _httpClient.SendAsync(request);
                 string responseString = await response.Content.ReadAsStringAsync();
 
-                if (!response.IsSuccessStatusCode)
+                // If tool not supported by this model variant, retry without tools
+                if (!response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var fallbackBody = new
+                    {
+                        system_instruction = new
+                        {
+                            parts = new object[]
+                            {
+                                new { text = systemPrompt }
+                            }
+                        },
+                        contents = contentsPayload
+                    };
+                    string fallbackJson = JsonConvert.SerializeObject(fallbackBody);
+                    using (var fallbackReq = new HttpRequestMessage(HttpMethod.Post, url))
+                    {
+                        fallbackReq.Content = new StringContent(fallbackJson, Encoding.UTF8, "application/json");
+                        using (var fallbackResp = await _httpClient.SendAsync(fallbackReq))
+                        {
+                            responseString = await fallbackResp.Content.ReadAsStringAsync();
+                            if (!fallbackResp.IsSuccessStatusCode)
+                            {
+                                HandleApiError(fallbackResp.StatusCode, responseString, "Google Gemini");
+                            }
+                        }
+                    }
+                }
+                else if (!response.IsSuccessStatusCode)
                 {
                     HandleApiError(response.StatusCode, responseString, "Google Gemini");
                 }
 
                 var json = JObject.Parse(responseString);
-                var textPart = json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
-
-                if (string.IsNullOrEmpty(textPart))
+                var candidate = json["candidates"]?[0];
+                if (candidate == null)
                 {
                     throw new Exception("Received empty response from Google Gemini.");
                 }
 
-                return textPart.Trim();
+                var sb = new StringBuilder();
+                var parts = candidate["content"]?["parts"] as JArray;
+                if (parts != null)
+                {
+                    foreach (var part in parts)
+                    {
+                        string pText = part["text"]?.ToString();
+                        if (!string.IsNullOrEmpty(pText))
+                        {
+                            sb.Append(pText);
+                        }
+                    }
+                }
+
+                if (sb.Length == 0)
+                {
+                    throw new Exception("Received empty response from Google Gemini.");
+                }
+
+                // Extract Google Search Grounding sources if available
+                var chunks = candidate["groundingMetadata"]?["groundingChunks"] as JArray;
+                if (chunks != null && chunks.Count > 0)
+                {
+                    var sourcesList = new List<string>();
+                    foreach (var chunk in chunks)
+                    {
+                        string uri = chunk["web"]?["uri"]?.ToString();
+                        string title = chunk["web"]?["title"]?.ToString();
+                        if (!string.IsNullOrEmpty(uri))
+                        {
+                            string displayTitle = !string.IsNullOrEmpty(title) ? title.Trim() : uri;
+                            string entry = $"• [{displayTitle}]({uri})";
+                            if (!sourcesList.Contains(entry))
+                            {
+                                sourcesList.Add(entry);
+                            }
+                        }
+                    }
+
+                    if (sourcesList.Count > 0)
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine();
+                        sb.AppendLine("🔍 **Web Sources:**");
+                        foreach (var s in sourcesList.Take(4))
+                        {
+                            sb.AppendLine(s);
+                        }
+                    }
+                }
+
+                return sb.ToString().Trim();
             }
         }
 
@@ -440,11 +538,13 @@ namespace WinAI.Services
                 }
             }
 
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
             var requestBody = new
             {
                 model = modelId,
                 max_tokens = 2048,
-                system = "You are a helpful, concise AI assistant for Windows 10 Mobile.",
+                system = $"You are a helpful, concise AI assistant for Windows 10 Mobile. The current date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this accurate real-time date and time whenever asked about dates, days, years, or current time.",
                 messages = messagesPayload
             };
 

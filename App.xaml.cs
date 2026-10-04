@@ -26,10 +26,56 @@ namespace WinAI
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
+        private Windows.UI.ViewManagement.UISettings _uiSettings;
+
         public App()
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
+            InitializeSystemAccent();
+        }
+
+        private void InitializeSystemAccent()
+        {
+            try
+            {
+                _uiSettings = new Windows.UI.ViewManagement.UISettings();
+                UpdateAccentBrushes();
+                _uiSettings.ColorValuesChanged += async (s, args) =>
+                {
+                    try
+                    {
+                        var dispatcher = Windows.ApplicationModel.Core.CoreApplication.MainView?.CoreWindow?.Dispatcher;
+                        if (dispatcher != null)
+                        {
+                            await dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                            {
+                                UpdateAccentBrushes();
+                            });
+                        }
+                    }
+                    catch { }
+                };
+            }
+            catch { }
+        }
+
+        private void UpdateAccentBrushes()
+        {
+            try
+            {
+                if (_uiSettings != null)
+                {
+                    var accent = _uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent);
+                    var brush = new SolidColorBrush(accent);
+                    this.Resources["AppAccentBrush"] = brush;
+                    this.Resources["WinAIAccentBrush"] = brush;
+                    this.Resources["AppAccentLightBrush"] = brush;
+                    this.Resources["WindowsBlueBrush"] = brush;
+                    this.Resources["WindowsBlueColor"] = accent;
+                }
+            }
+            catch { }
         }
 
         /// <summary>
@@ -37,7 +83,7 @@ namespace WinAI
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
             Frame rootFrame = Window.Current.Content as Frame;
 
@@ -67,7 +113,9 @@ namespace WinAI
                     // configuring the new page by passing required information as a navigation
                     // parameter
                     WinAI.Services.ThemeService.Instance.ApplyTheme(rootFrame);
+                    WinAI.Services.LiveTileService.Instance.Initialize();
                     _ = WinAI.Data.Database.DatabaseInitializer.InitializeAsync();
+                    await WinAI.Services.AppSettingsService.Instance.InitializeAsync();
                     rootFrame.Navigate(typeof(WinAI.Views.HomePage), e.Arguments);
                 }
                 // Ensure the current window is active

@@ -28,7 +28,12 @@
                         <StackPanel Padding="0,32,0,32">
                             <!-- Drawer Header -->
                             <StackPanel Margin="24,0,16,28">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
+                                    <Image Source="ms-appx:///Assets/AppLogo.png"
+                                           Width="28"
+                                           Height="28"
+                                           Margin="0,0,10,0"
+                                           VerticalAlignment="Center" />
                                     <TextBlock Text="Win"
                                                FontSize="28"
                                                FontWeight="SemiBold"
@@ -300,6 +305,11 @@
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center"
                                     Margin="8,0,0,0">
+                            <Image Source="ms-appx:///Assets/AppLogo.png"
+                                   Width="22"
+                                   Height="22"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center" />
                             <TextBlock Text="Win"
                                        FontSize="22"
                                        FontWeight="SemiBold"
@@ -345,6 +355,47 @@
                                            Margin="0,4,0,0" />
                             </StackPanel>
 
+                            <!-- Home Attachment Preview Bar -->
+                            <Border x:Name="HomeAttachmentPreviewBar"
+                                    Visibility="Collapsed"
+                                    Background="{ThemeResource AppSurfaceBrush}"
+                                    BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8,6"
+                                    Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Image x:Name="HomeAttachmentThumbnailImage"
+                                           Grid.Column="0"
+                                           Width="40"
+                                           Height="40"
+                                           Stretch="UniformToFill"
+                                           Margin="0,0,10,0"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock x:Name="HomeAttachmentFileNameText"
+                                                   Text="Image Attached"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Ready for Vision Analysis"
+                                                   FontSize="10.5"
+                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2"
+                                            Width="30"
+                                            Height="30"
+                                            Background="Transparent"
+                                            Click="HomeRemoveAttachment_Click">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="11"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
                             <!-- Modern Translucent Launcher Composer Bar matching Screenshot 2 & 3 -->
                             <Border Background="{ThemeResource AppTranslucentBarBrush}"
                                     BorderBrush="{ThemeResource AppTranslucentBarBorderBrush}"
@@ -363,15 +414,15 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Left: + Button -->
-                                        <Button Grid.Column="0"
+                                        <!-- Left: + Attachment Button -->
+                                        <Button x:Name="HomeAttachButton"
+                                                Grid.Column="0"
+                                                Style="{StaticResource WinAIIconButtonStyle}"
                                                 Width="38"
                                                 Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
-                                                Click="NewChatItem_Click"
-                                                ToolTipService.ToolTip="New Chat">
+                                                Click="HomeAttachButton_Click"
+                                                ToolTipService.ToolTip="Add attachment">
                                             <TextBlock Text="&#xE710;"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="19"
@@ -383,76 +434,57 @@
                                         <!-- Center: Input Box (Transparent, never white on focus) -->
                                         <TextBox x:Name="HomePromptTextBox"
                                                  Grid.Column="1"
+                                                 Style="{StaticResource WinAITransparentTextBoxStyle}"
                                                  PlaceholderText="Type a message"
                                                  AcceptsReturn="True"
                                                  TextWrapping="Wrap"
                                                  MinHeight="36"
                                                  MaxHeight="96"
                                                  InputScope="Chat"
-                                                 Background="Transparent"
-                                                 BorderThickness="0"
                                                  FontSize="15"
-                                                 FontFamily="Segoe UI"
                                                  Foreground="{ThemeResource AppTextPrimaryBrush}"
                                                  VerticalAlignment="Center"
                                                  Margin="4,0,4,0"
                                                  KeyDown="HomePromptTextBox_KeyDown"
-                                                 TextChanged="HomePromptTextBox_TextChanged">
-                                            <TextBox.Resources>
-                                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
-                                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
-                                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                                                <StaticResource x:Key="TextControlForeground" ResourceKey="AppTextPrimaryBrush" />
-                                                <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="AppTextPrimaryBrush" />
-                                                <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="AppTextPrimaryBrush" />
-                                                <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="AppTextSecondaryBrush" />
-                                                <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="AppTextSecondaryBrush" />
-                                                <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="AppTextSecondaryBrush" />
-                                            </TextBox.Resources>
-                                        </TextBox>
+                                                 TextChanged="HomePromptTextBox_TextChanged"/>
 
-                                        <!-- Right 1: Voice Microphone Button (Green in Screenshot 2) -->
+                                        <!-- Right 1: Voice Microphone Button (Matches Windows Phone theme) -->
                                         <Button x:Name="HomeVoiceRecordButton"
                                                 Grid.Column="2"
+                                                Style="{StaticResource WinAIIconButtonStyle}"
                                                 Width="38"
                                                 Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
                                                 Click="HomeVoiceRecordButton_Click"
                                                 ToolTipService.ToolTip="Voice message">
                                             <TextBlock Text="&#xE720;"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="19"
-                                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                                       Foreground="{ThemeResource AppAccentBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Button>
 
-                                        <!-- Right 2: Send Button (Paper-plane outline in Screenshot 2) -->
+                                        <!-- Right 2: Send Button (Matches Windows Phone theme) -->
                                         <Button x:Name="HomeSendButton"
                                                 Grid.Column="3"
+                                                Style="{StaticResource WinAIIconButtonStyle}"
                                                 Width="38"
                                                 Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
                                                 Click="HomeSendButton_Click"
                                                 ToolTipService.ToolTip="Send prompt">
                                             <TextBlock Text="&#xE724;"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="18"
-                                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                                       Foreground="{ThemeResource AppAccentBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Button>
                                     </Grid>
 
-                                    <!-- State 2: Active Voice Recording Bar (Screenshot 3) -->
-                                    <Grid x:Name="HomeVoiceRecordingGrid" Visibility="Collapsed">
+                                    <!-- State 2: Active Voice Recording Bar (Native Windows Phone Listening UI) -->
+                                    <Grid x:Name="HomeVoiceRecordingGrid" Visibility="Collapsed" MinHeight="38">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
@@ -460,63 +492,153 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Left: Red Mic Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE720;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="20"
-                                                   Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
-                                                   Margin="10,0,10,0"
-                                                   VerticalAlignment="Center"/>
+                                        <!-- Column 0: Animated Microphone Indicator -->
+                                        <Grid Grid.Column="0" VerticalAlignment="Center" Margin="6,0,8,0" Width="28" Height="28">
+                                            <Ellipse x:Name="HomeVoicePulseDot"
+                                                     Width="28" Height="28"
+                                                     Fill="{ThemeResource AppVoiceRecordActiveBrush}"
+                                                     Opacity="0.25"/>
+                                            <TextBlock x:Name="HomeVoiceMicIcon"
+                                                       Text="&#xE720;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
 
-                                        <!-- Timer (0:01 etc.) -->
-                                        <TextBlock x:Name="HomeVoiceRecordingTimerText"
-                                                   Grid.Column="1"
-                                                   Text="0:00"
-                                                   FontSize="16"
-                                                   FontFamily="Segoe UI"
-                                                   FontWeight="Normal"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center"/>
+                                        <!-- Column 1: Status & Live Transcription -->
+                                        <Grid Grid.Column="1" VerticalAlignment="Center" Margin="0,2,6,2">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <!-- Right 1: Trash / Cancel Recording Button -->
+                                            <!-- Top line: Status, Timer, and subtle waveform bars -->
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="HomeVoiceRecordingStatusText"
+                                                           Text="Listening..."
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{ThemeResource AppVoiceRecordActiveBrush}"
+                                                           Margin="0,0,6,0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="HomeVoiceRecordingTimerText"
+                                                           Text="0:00"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           FontWeight="Normal"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0"
+                                                           VerticalAlignment="Center"/>
+
+                                                <!-- Subtle Native Windows Phone Audio Waveform Indicator -->
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Rectangle x:Name="HomeVoiceWave1" Width="2.5" Height="8" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.7" Margin="0,0,2,0"/>
+                                                    <Rectangle x:Name="HomeVoiceWave2" Width="2.5" Height="14" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.9" Margin="0,0,2,0"/>
+                                                    <Rectangle x:Name="HomeVoiceWave3" Width="2.5" Height="10" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.75" Margin="0,0,2,0"/>
+                                                    <Rectangle x:Name="HomeVoiceWave4" Width="2.5" Height="6" RadiusX="1" RadiusY="1" Fill="{ThemeResource AppVoiceRecordActiveBrush}" Opacity="0.6"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Bottom line: Live interim transcribed text (hypothesis) -->
+                                            <TextBlock x:Name="HomeVoiceHypothesisText"
+                                                       Grid.Row="1"
+                                                       Text="Speak now..."
+                                                       FontSize="12"
+                                                       FontStyle="Italic"
+                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1"
+                                                       Margin="0,2,0,0"/>
+                                        </Grid>
+
+                                        <!-- Column 2: Cancel Recording Button -->
                                         <Button x:Name="HomeCancelVoiceRecordingButton"
                                                 Grid.Column="2"
+                                                Style="{StaticResource WinAIIconButtonStyle}"
                                                 Width="38"
                                                 Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
                                                 Margin="0,0,4,0"
                                                 Click="HomeCancelVoiceRecordingButton_Click"
-                                                ToolTipService.ToolTip="Cancel recording">
-                                            <TextBlock Text="&#xE74D;"
+                                                ToolTipService.ToolTip="Cancel">
+                                            <TextBlock Text="&#xE711;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="18"
+                                                       FontSize="16"
                                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Button>
 
-                                        <!-- Right 2: Send Recording (Transcribes and sends directly into chat!) -->
-                                        <Button x:Name="HomeSendVoiceRecordingButton"
+                                        <!-- Column 3: Done Recording Button (Checkmark - puts text into composer without auto-sending) -->
+                                        <Button x:Name="HomeDoneVoiceRecordingButton"
                                                 Grid.Column="3"
+                                                Style="{StaticResource WinAIIconButtonStyle}"
                                                 Width="38"
                                                 Height="38"
-                                                Background="Transparent"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
-                                                Click="HomeSendVoiceRecordingButton_Click"
-                                                ToolTipService.ToolTip="Transcribe and send">
-                                            <TextBlock Text="&#xE724;"
+                                                Click="HomeDoneVoiceRecordingButton_Click"
+                                                ToolTipService.ToolTip="Done (insert text)">
+                                            <TextBlock Text="&#xE73E;"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="18"
-                                                       Foreground="{ThemeResource AppSendGreenBrush}"
+                                                       Foreground="{ThemeResource AppAccentBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Button>
                                     </Grid>
                                 </Grid>
+                            </Border>
+
+                            <!-- Clear Model Unavailable Warning Banner (Requirement 10) -->
+                            <Border x:Name="HomeModelUnavailableBanner"
+                                    Visibility="Collapsed"
+                                    Background="{ThemeResource WinAIErrorBrush}"
+                                    CornerRadius="10"
+                                    Padding="12,8"
+                                    Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE783;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Foreground="White"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="HomeModelUnavailableText"
+                                               Text="Your selected model is unavailable. Please select another model."
+                                               FontSize="12.5"
+                                               FontFamily="Segoe UI"
+                                               Foreground="White"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Home Voice Error / Status Banner -->
+                            <Border x:Name="HomeVoiceStatusBanner"
+                                    Visibility="Collapsed"
+                                    Background="{ThemeResource WinAIErrorBrush}"
+                                    CornerRadius="10"
+                                    Padding="12,8"
+                                    Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="HomeVoiceStatusBannerIcon"
+                                               Text="&#xE783;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Foreground="White"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="HomeVoiceStatusBannerText"
+                                               Text="Microphone permission is required."
+                                               FontSize="12.5"
+                                               FontFamily="Segoe UI"
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="WrapWholeWords"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
                             </Border>
 
                             <!-- Model Selector Dropdown Button below the hero input -->
@@ -532,23 +654,12 @@
                                         CornerRadius="16"
                                         Padding="10,5,12,5">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border x:Name="HomeModelIconContainer"
-                                            Width="18"
-                                            Height="18"
-                                            CornerRadius="4"
-                                            Background="#10A37F"
-                                            Margin="0,0,8,0"
-                                            VerticalAlignment="Center">
-                                        <TextBlock x:Name="HomeModelIconGlyph"
-                                                   Text="&#xE8BD;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="10"
-                                                   Foreground="White"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center" />
-                                    </Border>
+                                        <controls:WinAIProviderIcon x:Name="HomeModelProviderIcon"
+                                                                    IconSize="18"
+                                                                    BadgeCornerRadius="4"
+                                                                    Margin="0,0,8,0"
+                                                                    VerticalAlignment="Center" />
                                     <TextBlock x:Name="HomeSelectedModelText"
-                                               Text="GPT-4o"
                                                FontSize="13.5"
                                                FontWeight="SemiBold"
                                                FontFamily="Segoe UI"
@@ -563,7 +674,8 @@
                                 </StackPanel>
                                 </Border>
                                 <Button.Flyout>
-                                    <MenuFlyout x:Name="HomeModelPickerFlyout">
+                                    <MenuFlyout x:Name="HomeModelPickerFlyout"
+                                                MenuFlyoutPresenterStyle="{StaticResource ModernMenuFlyoutStyle}">
                                     </MenuFlyout>
                                 </Button.Flyout>
                             </Button>

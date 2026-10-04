@@ -2,13 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Foundation.Metadata;
 using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using WinAI.Models;
 using WinAI.Services;
+using WinAI.Services.Providers;
 
 namespace WinAI.Views
 {
@@ -19,10 +23,14 @@ namespace WinAI.Views
         private const string SettingDefaultProviderKey = "App_DefaultProvider";
         private const string SettingDefaultModelKey = "App_DefaultModel";
 
+        private static readonly bool _hasMenuFlyoutIcon = 
+            ApiInformation.IsPropertyPresent("Windows.UI.Xaml.Controls.MenuFlyoutItem", "Icon");
+
         private readonly ApplicationDataContainer _localSettings = ApplicationData.Current.LocalSettings;
         private readonly ThemeService _themeService = ThemeService.Instance;
         private readonly CredentialVaultService _vaultService = CredentialVaultService.Instance;
         private readonly ChatHistoryService _chatHistoryService = ChatHistoryService.Instance;
+        private readonly AiProviderRegistry _providerRegistry = AiProviderRegistry.Instance;
         private DispatcherTimer _notificationTimer;
 
         public SettingsPage()
@@ -97,20 +105,28 @@ namespace WinAI.Views
             UpdateThemeDisplayText();
 
             // 2. Font Size
-            string fontSize = GetSetting(SettingFontSizeKey, "Medium");
+            string fontSize = GetSetting(SettingFontSizeKey, "Default");
+            if (string.Equals(fontSize, "Medium", StringComparison.OrdinalIgnoreCase))
+            {
+                fontSize = "Default";
+            }
             FontSizeValueText.Text = fontSize;
 
             // 3. Language
             string language = GetSetting(SettingLanguageKey, "English");
             LanguageValueText.Text = language;
 
-            // 4. Default Provider
-            string provider = GetSetting(SettingDefaultProviderKey, "OpenAI");
-            DefaultProviderValueText.Text = provider;
+            // 4. Live Tile Style
+            TileStyleValueText.Text = LiveTileService.Instance.CurrentTileStyle == LiveTileService.StyleColorful ? "Colorful" : "Transparent";
+
+            // 5. Default Provider
+            string providerId = AppSettingsService.Instance.DefaultProviderId;
+            var providerObj = AiProviderRegistry.Instance.GetProvider(providerId);
+            DefaultProviderValueText.Text = providerObj?.DisplayName ?? providerId;
 
             // 5. Default Model
-            string model = GetSetting(SettingDefaultModelKey, "GPT-4o");
-            DefaultModelValueText.Text = model;
+            var modelDesc = AppSettingsService.Instance.GetDefaultModelDescriptor();
+            DefaultModelValueText.Text = modelDesc?.DisplayName ?? AppSettingsService.Instance.DefaultModelId;
         }
 
         private void UpdateThemeDisplayText()
@@ -143,291 +159,361 @@ namespace WinAI.Views
             _localSettings.Values[key] = value;
         }
 
+        #region Native Selection UI Helpers
+
+        private MenuFlyoutItem CreateHeaderItem(string title)
+        {
+            var item = new MenuFlyoutItem
+            {
+                Text = title,
+                IsEnabled = false
+            };
+            if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutHeaderStyle", out object styleObj) && styleObj is Style style)
+            {
+                item.Style = style;
+            }
+            return item;
+        }
+
+        private MenuFlyoutItem CreateSelectionItem(string text, bool isSelected)
+        {
+            var item = new MenuFlyoutItem();
+            if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutItemStyle", out object styleObj) && styleObj is Style style)
+            {
+                item.Style = style;
+            }
+
+            var accentBrush = Application.Current.Resources["AppAccentBrush"] as SolidColorBrush;
+
+            if (_hasMenuFlyoutIcon)
+            {
+                item.Text = text;
+                if (isSelected)
+                {
+                    item.Icon = new FontIcon
+                    {
+                        Glyph = "\uE73E",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        Foreground = accentBrush,
+                        FontSize = 13
+                    };
+                    if (accentBrush != null)
+                    {
+                        item.Foreground = accentBrush;
+                    }
+                }
+                else
+                {
+                    item.Icon = new FontIcon
+                    {
+                        Glyph = "\uE73E",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        Opacity = 0,
+                        FontSize = 13
+                    };
+                }
+            }
+            else
+            {
+                item.Text = isSelected ? $"\uE73E  {text}" : $"    {text}";
+                if (isSelected && accentBrush != null)
+                {
+                    item.Foreground = accentBrush;
+                }
+            }
+
+            return item;
+        }
+
+        private MenuFlyout CreateBaseMenuFlyout()
+        {
+            var flyout = new MenuFlyout();
+            if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutStyle", out object pStyleObj) && pStyleObj is Style pStyle)
+            {
+                flyout.MenuFlyoutPresenterStyle = pStyle;
+            }
+            return flyout;
+        }
+
+        #endregion
+
         #region Appearance Section Interactions
 
-        private async void ThemeRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void ThemeRow_Tapped(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            if (!(sender is FrameworkElement target)) return;
+
+            var flyout = CreateBaseMenuFlyout();
+
+            flyout.Items.Add(CreateHeaderItem("Theme"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            var options = new[]
             {
-                Title = "Choose Theme",
-                PrimaryButtonText = "Apply",
-                SecondaryButtonText = "Cancel"
+                new { Label = "System", Theme = ElementTheme.Default },
+                new { Label = "Light", Theme = ElementTheme.Light },
+                new { Label = "Dark", Theme = ElementTheme.Dark }
             };
 
-            var stack = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+            var currentTheme = _themeService.CurrentTheme;
 
-            var combo = new ComboBox
+            foreach (var opt in options)
             {
-                Header = "App Theme",
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
+                bool isSelected = opt.Theme == currentTheme;
+                var item = CreateSelectionItem(opt.Label, isSelected);
+                var chosenTheme = opt.Theme;
+                var chosenLabel = opt.Label;
 
-            combo.Items.Add(new ComboBoxItem { Content = "Dark Theme", Tag = ElementTheme.Dark });
-            combo.Items.Add(new ComboBoxItem { Content = "Light Theme", Tag = ElementTheme.Light });
-            combo.Items.Add(new ComboBoxItem { Content = "Use System Setting", Tag = ElementTheme.Default });
-
-            switch (_themeService.CurrentTheme)
-            {
-                case ElementTheme.Dark:
-                    combo.SelectedIndex = 0;
-                    break;
-                case ElementTheme.Light:
-                    combo.SelectedIndex = 1;
-                    break;
-                default:
-                    combo.SelectedIndex = 2;
-                    break;
-            }
-
-            stack.Children.Add(combo);
-            dialog.Content = stack;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && combo.SelectedItem is ComboBoxItem selectedItem)
-            {
-                var selectedTheme = (ElementTheme)selectedItem.Tag;
-                _themeService.SetTheme(selectedTheme);
-                UpdateThemeDisplayText();
-                ShowNotification($"Theme set to {ThemeValueText.Text}.");
-            }
-        }
-
-        private async void FontSizeRow_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "Font Size",
-                PrimaryButtonText = "Save",
-                SecondaryButtonText = "Cancel"
-            };
-
-            var stack = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
-
-            var combo = new ComboBox
-            {
-                Header = "Reading Size",
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-
-            combo.Items.Add(new ComboBoxItem { Content = "Small", Tag = "Small" });
-            combo.Items.Add(new ComboBoxItem { Content = "Medium (Default)", Tag = "Medium" });
-            combo.Items.Add(new ComboBoxItem { Content = "Large", Tag = "Large" });
-
-            string current = GetSetting(SettingFontSizeKey, "Medium");
-            if (current == "Small") combo.SelectedIndex = 0;
-            else if (current == "Large") combo.SelectedIndex = 2;
-            else combo.SelectedIndex = 1;
-
-            stack.Children.Add(combo);
-            dialog.Content = stack;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && combo.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string choice = selectedItem.Tag as string ?? "Medium";
-                SetSetting(SettingFontSizeKey, choice);
-                FontSizeValueText.Text = choice;
-                ShowNotification($"Font size updated to {choice}.");
-            }
-        }
-
-        private async void LanguageRow_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "App Language",
-                Content = new TextBlock
+                item.Click += (s, args) =>
                 {
-                    Text = "English is currently the active application language.\n\nAdditional language packs will become available in upcoming releases of WinAI.",
-                    TextWrapping = TextWrapping.Wrap,
-                    FontSize = 13.5
-                },
-                PrimaryButtonText = "OK"
+                    _themeService.SetTheme(chosenTheme);
+                    UpdateThemeDisplayText();
+                    ShowNotification($"Theme set to {chosenLabel}.");
+                };
+
+                flyout.Items.Add(item);
+            }
+
+            flyout.ShowAt(target);
+        }
+
+        private void FontSizeRow_Tapped(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is FrameworkElement target)) return;
+
+            var flyout = CreateBaseMenuFlyout();
+
+            flyout.Items.Add(CreateHeaderItem("Font Size"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            string current = GetSetting(SettingFontSizeKey, "Default");
+            if (string.Equals(current, "Medium", StringComparison.OrdinalIgnoreCase))
+            {
+                current = "Default";
+            }
+
+            var sizes = new[] { "Small", "Default", "Large" };
+
+            foreach (var size in sizes)
+            {
+                bool isSelected = string.Equals(size, current, StringComparison.OrdinalIgnoreCase);
+                var item = CreateSelectionItem(size, isSelected);
+                string chosenSize = size;
+
+                item.Click += (s, args) =>
+                {
+                    SetSetting(SettingFontSizeKey, chosenSize);
+                    AppSettingsService.Instance.SetString(AppSettingsService.SettingFontSizeKey, chosenSize);
+                    FontSizeValueText.Text = chosenSize;
+                    ShowNotification($"Font size updated to {chosenSize}.");
+                };
+
+                flyout.Items.Add(item);
+            }
+
+            flyout.ShowAt(target);
+        }
+
+        private void LanguageRow_Tapped(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is FrameworkElement target)) return;
+
+            var flyout = CreateBaseMenuFlyout();
+
+            flyout.Items.Add(CreateHeaderItem("Language"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            string current = GetSetting(SettingLanguageKey, "English");
+
+            var languages = new[] { "English", "Urdu" };
+
+            foreach (var lang in languages)
+            {
+                bool isSelected = string.Equals(lang, current, StringComparison.OrdinalIgnoreCase);
+                var item = CreateSelectionItem(lang, isSelected);
+                string chosenLang = lang;
+
+                item.Click += (s, args) =>
+                {
+                    SetSetting(SettingLanguageKey, chosenLang);
+                    AppSettingsService.Instance.SetString(AppSettingsService.SettingLanguageKey, chosenLang);
+                    LanguageValueText.Text = chosenLang;
+                    ShowNotification($"Language updated to {chosenLang}.");
+                };
+
+                flyout.Items.Add(item);
+            }
+
+            flyout.ShowAt(target);
+        }
+
+        private void TileStyleRow_Tapped(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is FrameworkElement target)) return;
+
+            var flyout = CreateBaseMenuFlyout();
+
+            flyout.Items.Add(CreateHeaderItem("Live Tile Style"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            var options = new[]
+            {
+                new { Label = "Transparent", Style = LiveTileService.StyleTransparent, Subtitle = "Uses phone accent color" },
+                new { Label = "Colorful", Style = LiveTileService.StyleColorful, Subtitle = "Branded icon on colored tile" }
             };
 
-            await dialog.ShowAsync();
+            var currentStyle = LiveTileService.Instance.CurrentTileStyle;
+
+            foreach (var opt in options)
+            {
+                bool isSelected = string.Equals(opt.Style, currentStyle, StringComparison.OrdinalIgnoreCase);
+                var item = CreateSelectionItem(opt.Label, isSelected);
+                var chosenStyle = opt.Style;
+                var chosenLabel = opt.Label;
+
+                item.Click += (s, args) =>
+                {
+                    LiveTileService.Instance.SetTileStyle(chosenStyle);
+                    TileStyleValueText.Text = chosenLabel;
+                    ShowNotification($"Start tile set to {chosenLabel}.");
+                };
+
+                flyout.Items.Add(item);
+            }
+
+            flyout.ShowAt(target);
         }
 
         #endregion
 
         #region AI & Chat Section Interactions
 
-        private async void DefaultProviderRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void DefaultProviderRow_Tapped(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            if (!(sender is FrameworkElement target)) return;
+
+            var flyout = CreateBaseMenuFlyout();
+
+            flyout.Items.Add(CreateHeaderItem("Default Provider"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            string currentProviderId = AppSettingsService.Instance.DefaultProviderId;
+            var providers = _providerRegistry.GetProviders();
+
+            foreach (var provider in providers)
             {
-                Title = "Default AI Provider",
-                PrimaryButtonText = "Save",
-                SecondaryButtonText = "Cancel"
-            };
+                bool isSelected = string.Equals(provider.Id, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                var item = CreateSelectionItem(provider.DisplayName, isSelected);
+                var prov = provider;
 
-            var stack = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
-
-            var combo = new ComboBox
-            {
-                Header = "Preferred Provider",
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var providers = new[]
-            {
-                new { Id = "openai", Name = "OpenAI" },
-                new { Id = "gemini", Name = "Gemini" },
-                new { Id = "claude", Name = "Claude" },
-                new { Id = "perplexity", Name = "Perplexity" },
-                new { Id = "deepseek", Name = "DeepSeek" },
-                new { Id = "xai", Name = "xAI" }
-            };
-
-            string current = GetSetting(SettingDefaultProviderKey, "OpenAI");
-            int selectedIndex = 0;
-
-            for (int i = 0; i < providers.Length; i++)
-            {
-                bool isConfigured = _vaultService.HasApiKey(providers[i].Id);
-                string suffix = isConfigured ? " (Configured)" : " (No Key)";
-                combo.Items.Add(new ComboBoxItem
+                item.Click += (s, args) =>
                 {
-                    Content = providers[i].Name + suffix,
-                    Tag = providers[i].Name
-                });
+                    string newProvId = prov.Id;
+                    var availableModels = _providerRegistry.GetModelsForProvider(newProvId, onlyAvailable: true);
+                    string newModelId = (availableModels != null && availableModels.Count > 0) ? availableModels[0].Id : "gpt-4o";
+                    string newModelName = (availableModels != null && availableModels.Count > 0) ? availableModels[0].DisplayName : "GPT-4o";
 
-                if (string.Equals(providers[i].Name, current, StringComparison.OrdinalIgnoreCase))
-                {
-                    selectedIndex = i;
-                }
+                    AppSettingsService.Instance.SetDefaultModel(newProvId, newModelId, newModelName);
+                    DefaultProviderValueText.Text = prov.DisplayName;
+                    DefaultModelValueText.Text = newModelName;
+
+                    ShowNotification($"Default provider set to {prov.DisplayName}.");
+                };
+
+                flyout.Items.Add(item);
             }
 
-            combo.SelectedIndex = selectedIndex;
-            stack.Children.Add(combo);
-
-            var note = new TextBlock
-            {
-                Text = "To configure API keys for any provider, open Key Vault from the side drawer.",
-                FontSize = 12,
-                Foreground = Application.Current.Resources["AppTextSecondaryBrush"] as Windows.UI.Xaml.Media.Brush,
-                TextWrapping = TextWrapping.Wrap
-            };
-            stack.Children.Add(note);
-
-            dialog.Content = stack;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && combo.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string provider = selectedItem.Tag as string ?? "OpenAI";
-                SetSetting(SettingDefaultProviderKey, provider);
-                DefaultProviderValueText.Text = provider;
-
-                // Set a sensible default model matching this provider
-                string model = GetDefaultModelForProvider(provider);
-                SetSetting(SettingDefaultModelKey, model);
-                DefaultModelValueText.Text = model;
-
-                ShowNotification($"Default provider set to {provider}.");
-            }
+            flyout.ShowAt(target);
         }
 
-        private async void DefaultModelRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void DefaultModelRow_Tapped(object sender, RoutedEventArgs e)
         {
-            string currentProvider = GetSetting(SettingDefaultProviderKey, "OpenAI");
+            if (!(sender is FrameworkElement target)) return;
 
-            var dialog = new ContentDialog
+            var flyout = CreateBaseMenuFlyout();
+
+            string currentProviderId = AppSettingsService.Instance.DefaultProviderId;
+            var providerObj = _providerRegistry.GetProvider(currentProviderId);
+            string providerName = providerObj?.DisplayName ?? "AI";
+
+            flyout.Items.Add(CreateHeaderItem($"Default Model ({providerName})"));
+            flyout.Items.Add(new MenuFlyoutSeparator());
+
+            string currentModelId = AppSettingsService.Instance.DefaultModelId;
+
+            // Shared model registry / cache query
+            var allModels = _providerRegistry.GetModelsForProvider(currentProviderId);
+
+            // Requirement 7:
+            // Only show models that are currently: Available
+            // Do NOT show models marked: Unavailable, Deprecated, Not accessible, Missing required credentials
+            var eligibleModels = allModels.Where(m =>
+                m.IsAvailable &&
+                !string.Equals(m.Status, "Unavailable", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(m.Status, "Deprecated", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(m.Status, "Not accessible", StringComparison.OrdinalIgnoreCase) &&
+                (!m.RequiresApiKey || m.IsConfigured || _vaultService.HasApiKey(m.ProviderId))
+            ).ToList();
+
+            if (eligibleModels.Count == 0)
             {
-                Title = $"Default Model ({currentProvider})",
-                PrimaryButtonText = "Save",
-                SecondaryButtonText = "Cancel"
-            };
-
-            var stack = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
-
-            var combo = new ComboBox
-            {
-                Header = "Model for New Chats",
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-
-            var cached = ModelService.Instance.GetModelsForProvider(currentProvider);
-            string currentModel = GetSetting(SettingDefaultModelKey, cached.Count > 0 ? cached[0].Id : "gpt-4o");
-            int selectedIndex = 0;
-
-            if (cached != null && cached.Count > 0)
-            {
-                for (int i = 0; i < cached.Count; i++)
+                var emptyItem = new MenuFlyoutItem
                 {
-                    combo.Items.Add(new ComboBoxItem { Content = cached[i].DisplayName, Tag = cached[i].Id });
-                    if (string.Equals(cached[i].Id, currentModel, StringComparison.OrdinalIgnoreCase))
-                    {
-                        selectedIndex = i;
-                    }
+                    Text = "No available models with API key",
+                    IsEnabled = false
+                };
+                if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutItemStyle", out object itemStyleObj) && itemStyleObj is Style iStyle)
+                {
+                    emptyItem.Style = iStyle;
                 }
+                flyout.Items.Add(emptyItem);
+
+                var keyVaultHint = new MenuFlyoutItem
+                {
+                    Text = "Configure in Key Vault →"
+                };
+                if (Application.Current.Resources.TryGetValue("ModernMenuFlyoutItemStyle", out object kvStyleObj) && kvStyleObj is Style kvStyle)
+                {
+                    keyVaultHint.Style = kvStyle;
+                }
+                if (Application.Current.Resources["AppAccentBrush"] is SolidColorBrush accent)
+                {
+                    keyVaultHint.Foreground = accent;
+                }
+                keyVaultHint.Click += (s, args) =>
+                {
+                    Frame.Navigate(typeof(KeyVaultPage));
+                };
+                flyout.Items.Add(keyVaultHint);
             }
             else
             {
-                var fallbackModels = GetModelsForProvider(currentProvider);
-                for (int i = 0; i < fallbackModels.Length; i++)
+                foreach (var m in eligibleModels)
                 {
-                    combo.Items.Add(new ComboBoxItem { Content = fallbackModels[i], Tag = fallbackModels[i] });
-                    if (string.Equals(fallbackModels[i], currentModel, StringComparison.OrdinalIgnoreCase))
+                    bool isSelected = string.Equals(m.Id, currentModelId, StringComparison.OrdinalIgnoreCase);
+                    var item = CreateSelectionItem(m.DisplayName, isSelected);
+                    var desc = m;
+
+                    item.Click += (s, args) =>
                     {
-                        selectedIndex = i;
-                    }
+                        AppSettingsService.Instance.SetDefaultModel(desc.ProviderId, desc.Id, desc.DisplayName);
+                        DefaultModelValueText.Text = desc.DisplayName;
+                        ShowNotification($"Default model set to {desc.DisplayName}.");
+                    };
+
+                    flyout.Items.Add(item);
                 }
             }
 
-            combo.SelectedIndex = selectedIndex;
-            stack.Children.Add(combo);
-
-            dialog.Content = stack;
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary && combo.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string model = selectedItem.Tag as string ?? (cached.Count > 0 ? cached[0].Id : "gpt-4o");
-                SetSetting(SettingDefaultModelKey, model);
-                DefaultModelValueText.Text = selectedItem.Content as string ?? model;
-                ShowNotification($"Default model set to {DefaultModelValueText.Text}.");
-            }
+            flyout.ShowAt(target);
         }
 
-        private string[] GetModelsForProvider(string provider)
-        {
-            var cached = ModelService.Instance.GetModelsForProvider(provider);
-            if (cached != null && cached.Count > 0)
-            {
-                return cached.Select(m => m.Id).ToArray();
-            }
-
-            switch (provider?.ToLowerInvariant())
-            {
-                case "gemini":
-                    return new[] { "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro" };
-                case "claude":
-                    return new[] { "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus" };
-                case "perplexity":
-                    return new[] { "sonar", "sonar-pro", "sonar-reasoning" };
-                case "deepseek":
-                    return new[] { "deepseek-chat", "deepseek-reasoner" };
-                case "xai":
-                    return new[] { "grok-2-1212", "grok-2-vision-1212", "grok-beta" };
-                default:
-                    return new[] { "gpt-4o", "gpt-4o-mini", "o1-mini", "gpt-3.5-turbo" };
-            }
-        }
-
-        private string GetDefaultModelForProvider(string provider)
-        {
-            var list = GetModelsForProvider(provider);
-            return list.Length > 0 ? list[0] : "gpt-4o";
-        }
-
-        private void ChatHistoryRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void ChatHistoryRow_Tapped(object sender, RoutedEventArgs e)
         {
             Frame.Navigate(typeof(ConversationsPage));
         }
 
-        private async void ClearConversationsRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private async void ClearConversationsRow_Tapped(object sender, RoutedEventArgs e)
         {
             var dialog = new ContentDialog
             {
@@ -449,12 +535,12 @@ namespace WinAI.Views
 
         #region Privacy & Security Section Interactions
 
-        private void KeyVaultRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void KeyVaultRow_Tapped(object sender, RoutedEventArgs e)
         {
             Frame.Navigate(typeof(KeyVaultPage));
         }
 
-        private void PrivacyCenterRow_Tapped(object sender, TappedRoutedEventArgs e)
+        private void PrivacyCenterRow_Tapped(object sender, RoutedEventArgs e)
         {
             Frame.Navigate(typeof(PrivacyCenterPage));
         }
@@ -479,9 +565,9 @@ namespace WinAI.Views
 
         // Drawer Menu Item Handlers
         private void DrawerHome_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(HomePage));
-        private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage));
+        private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage), "new");
         private void DrawerConversations_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ConversationsPage));
-        private void DrawerProviders_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(KeyVaultPage));
+        private void DrawerProviders_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(AiProvidersPage));
         private void DrawerVault_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(KeyVaultPage));
         private void DrawerPromptKit_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(PromptKitPage));
         private void DrawerSettings_Click(object sender, RoutedEventArgs e) => NavDrawer.IsPaneOpen = false;

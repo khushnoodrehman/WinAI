@@ -57,6 +57,7 @@ namespace WinAI
         private string _pendingImageBase64;
         private string _pendingImageMimeType;
         private string _pendingImageFileName;
+        private readonly WinAIAttachmentFlyout _attachmentFlyout = new WinAIAttachmentFlyout();
 
         public MainPage()
         {
@@ -65,6 +66,9 @@ namespace WinAI
             Messages.CollectionChanged += Messages_CollectionChanged;
             _apiKeyService.KeysChanged += ApiKeyService_KeysChanged;
             _historyService.SessionsUpdated += HistoryService_SessionsUpdated;
+
+            _attachmentFlyout.ImageAttached += OnAttachmentImageAttached;
+            _attachmentFlyout.AttachmentError += OnAttachmentError;
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -84,6 +88,14 @@ namespace WinAI
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
+
+            if (_isRecognizingVoice)
+            {
+                _voiceTimer?.Stop();
+                UnbindVoiceEvents();
+                _isRecognizingVoice = false;
+                var unawaitedTask = _voiceService.CancelRecordingAsync();
+            }
 
             var navManager = SystemNavigationManager.GetForCurrentView();
             navManager.BackRequested -= MainPage_BackRequested;
@@ -154,6 +166,32 @@ namespace WinAI
                 Messages.Clear();
                 UpdateSendButtonState();
 
+                if (!string.IsNullOrEmpty(launchArgs.ImageBase64))
+                {
+                    _pendingImageBase64 = launchArgs.ImageBase64;
+                    _pendingImageMimeType = launchArgs.ImageMimeType;
+                    _pendingImageFileName = launchArgs.ImageFileName;
+                    if (AttachmentFileNameText != null) AttachmentFileNameText.Text = launchArgs.ImageFileName ?? "Image Attached";
+                    if (AttachmentPreviewBar != null) AttachmentPreviewBar.Visibility = Visibility.Visible;
+                    try
+                    {
+                        var bytes = Convert.FromBase64String(_pendingImageBase64);
+                        var bmp = new BitmapImage();
+                        using (var memStream = new InMemoryRandomAccessStream())
+                        {
+                            using (var writer = new DataWriter(memStream.GetOutputStreamAt(0)))
+                            {
+                                writer.WriteBytes(bytes);
+                                await writer.StoreAsync();
+                            }
+                            memStream.Seek(0);
+                            await bmp.SetSourceAsync(memStream);
+                            if (AttachmentThumbnailImage != null) AttachmentThumbnailImage.Source = bmp;
+                        }
+                    }
+                    catch { }
+                }
+
                 if (!string.IsNullOrWhiteSpace(launchArgs.Prompt))
                 {
                     InputTextBox.Text = launchArgs.Prompt;
@@ -195,7 +233,14 @@ namespace WinAI
                 var def = GetApplicationDefaultModel();
                 SelectModelById(def.Item1, def.Item2);
                 _currentSession = await _historyService.CreateNewSessionAsync(_selectedModel?.Id);
+                if (_currentSession != null)
+                {
+                    _currentSession.ProviderId = _currentProviderId;
+                    _currentSession.SelectedModelId = _currentModelId;
+                }
                 Messages.Clear();
+                if (InputTextBox != null) InputTextBox.Text = string.Empty;
+                ClearPendingAttachment();
                 UpdateSendButtonState();
                 return;
             }
@@ -392,6 +437,9 @@ namespace WinAI
 
                     foreach (var m in models)
                     {
+                        // Requirement 9: Do NOT show unavailable models in chat dropdowns
+                        if (!m.IsAvailable) continue;
+
                         bool isCurrent = string.Equals(m.ProviderId, _currentProviderId, StringComparison.OrdinalIgnoreCase) &&
                                          string.Equals(m.Id, _currentModelId, StringComparison.OrdinalIgnoreCase);
 
@@ -433,6 +481,22 @@ namespace WinAI
             {
                 bool isConfigured = _providerRegistry.IsProviderConfigured(model.ProviderId);
                 KeyRequiredHeaderWarning.Visibility = isConfigured ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            // Requirement 10: If user's configured model becomes unavailable, do NOT silently switch.
+            // Show clear message: "Your selected model is unavailable."
+            if (ModelUnavailableHeaderWarning != null)
+            {
+                ModelUnavailableHeaderWarning.Visibility = !model.IsAvailable ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (ChatModelUnavailableBanner != null)
+            {
+                ChatModelUnavailableBanner.Visibility = !model.IsAvailable ? Visibility.Visible : Visibility.Collapsed;
+                if (!model.IsAvailable && ChatModelUnavailableText != null)
+                {
+                    ChatModelUnavailableText.Text = $"Selected model '{model.DisplayName}' is unavailable. Tap header to choose another model.";
+                }
             }
 
             if (ModelSelectorButton != null)
@@ -584,21 +648,10 @@ namespace WinAI
         {
             try
             {
-                var localSettings = ApplicationData.Current.LocalSettings.Values;
-                string defaultProvider = localSettings.ContainsKey("App_DefaultProvider") 
-                    ? localSettings["App_DefaultProvider"] as string 
-                    : "OpenAI";
-                string defaultModel = localSettings.ContainsKey("App_DefaultModel") 
-                    ? localSettings["App_DefaultModel"] as string 
-                    : "GPT-4o";
-
-                string normProvider = AiProviderRegistry.NormalizeProviderId(defaultProvider);
-                var descriptor = _providerRegistry.GetModel(normProvider, defaultModel);
-                if (descriptor != null)
-                {
-                    return Tuple.Create(descriptor.ProviderId, descriptor.Id);
-                }
-                return Tuple.Create(normProvider, defaultModel ?? "gpt-4o");
+                var settings = WinAI.Services.AppSettingsService.Instance;
+                string prov = settings.DefaultProviderId ?? "openai";
+                string mod = settings.DefaultModelId ?? "gpt-4o";
+                return Tuple.Create(prov, mod);
             }
             catch
             {
@@ -628,6 +681,11 @@ namespace WinAI
             }
 
             UpdateModelHeaderVisuals(_selectedModelDescriptor);
+
+            if (!string.IsNullOrEmpty(_pendingImageBase64) && _selectedModelDescriptor != null && !_selectedModelDescriptor.SupportsVision)
+            {
+                ShowVoiceErrorBanner("This model does not support image input.");
+            }
 
             if (_currentSession != null)
             {
@@ -867,6 +925,14 @@ namespace WinAI
             string requestModelId = _currentModelId ?? _selectedModel?.Id ?? "gpt-4o";
             var requestModel = _selectedModelDescriptor ?? _providerRegistry.GetModel(requestProviderId, requestModelId);
 
+            // Block sending image requests to models that do not support vision
+            if (hasImage && requestModel != null && !requestModel.SupportsVision)
+            {
+                _isSending = false;
+                ShowVoiceErrorBanner("This model does not support image input.");
+                return;
+            }
+
             // 3. Ensure current session
             if (_currentSession == null)
             {
@@ -1079,7 +1145,6 @@ namespace WinAI
                 if (ModelSelectorButton != null) ModelSelectorButton.IsEnabled = true;
                 _isSending = false;
                 UpdateSendButtonState();
-                InputTextBox.Focus(FocusState.Programmatic);
                 ScrollToLatestMessage();
             }
         }
@@ -1088,63 +1153,34 @@ namespace WinAI
 
         #region Attachments & Voice
 
-        private async void AttachImage_Click(object sender, RoutedEventArgs e)
+        private void AttachButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var picker = new FileOpenPicker
-                {
-                    ViewMode = PickerViewMode.Thumbnail,
-                    SuggestedStartLocation = PickerLocationId.PicturesLibrary
-                };
-                picker.FileTypeFilter.Add(".jpg");
-                picker.FileTypeFilter.Add(".jpeg");
-                picker.FileTypeFilter.Add(".png");
-                picker.FileTypeFilter.Add(".bmp");
-                picker.FileTypeFilter.Add(".webp");
+            bool supportsVision = _selectedModelDescriptor?.SupportsVision ?? true;
+            _attachmentFlyout.ShowAt((FrameworkElement)sender, supportsVision);
+        }
 
-                StorageFile file = await picker.PickSingleFileAsync();
-                if (file == null) return;
+        private void OnAttachmentImageAttached(object sender, AttachmentResult result)
+        {
+            if (result == null) return;
 
-                string ext = file.FileType.ToLowerInvariant();
-                string mimeType = "image/jpeg";
-                if (ext == ".png") mimeType = "image/png";
-                else if (ext == ".webp") mimeType = "image/webp";
-                else if (ext == ".bmp") mimeType = "image/bmp";
+            _pendingImageBase64 = result.Base64Data;
+            _pendingImageMimeType = result.MimeType;
+            _pendingImageFileName = result.FileName;
+            if (AttachmentThumbnailImage != null) AttachmentThumbnailImage.Source = result.Thumbnail;
+            if (AttachmentFileNameText != null) AttachmentFileNameText.Text = result.FileName;
+            if (AttachmentPreviewBar != null) AttachmentPreviewBar.Visibility = Visibility.Visible;
 
-                using (var stream = await file.OpenReadAsync())
-                {
-                    var bytes = new byte[stream.Size];
-                    using (var reader = new DataReader(stream.GetInputStreamAt(0)))
-                    {
-                        await reader.LoadAsync((uint)stream.Size);
-                        reader.ReadBytes(bytes);
-                    }
+            UpdateSendButtonState();
+        }
 
-                    _pendingImageBase64 = Convert.ToBase64String(bytes);
-                    _pendingImageMimeType = mimeType;
-                    _pendingImageFileName = file.Name;
+        private void OnAttachmentError(object sender, string errorMessage)
+        {
+            ShowVoiceErrorBanner(errorMessage);
+        }
 
-                    var bmp = new BitmapImage();
-                    stream.Seek(0);
-                    await bmp.SetSourceAsync(stream);
-                    AttachmentThumbnailImage.Source = bmp;
-                    AttachmentFileNameText.Text = file.Name;
-                    AttachmentPreviewBar.Visibility = Visibility.Visible;
-
-                    UpdateSendButtonState();
-                }
-            }
-            catch (Exception ex)
-            {
-                var dialog = new ContentDialog
-                {
-                    Title = "Attachment Error",
-                    Content = $"Could not open image: {ex.Message}",
-                    PrimaryButtonText = "OK"
-                };
-                await dialog.ShowAsync();
-            }
+        private void AttachImage_Click(object sender, RoutedEventArgs e)
+        {
+            AttachButton_Click(sender, e);
         }
 
         private void RemoveAttachment_Click(object sender, RoutedEventArgs e)
@@ -1162,6 +1198,93 @@ namespace WinAI
             UpdateSendButtonState();
         }
 
+        private DispatcherTimer _voiceBannerTimer;
+
+        private void ShowVoiceErrorBanner(string message)
+        {
+            if (VoiceStatusBanner == null || VoiceStatusBannerText == null) return;
+            VoiceStatusBanner.Background = (Brush)Application.Current.Resources["WinAIErrorBrush"];
+            VoiceStatusBannerIcon.Text = "\uE783";
+            VoiceStatusBannerText.Text = message;
+            VoiceStatusBanner.Visibility = Visibility.Visible;
+
+            if (_voiceBannerTimer == null)
+            {
+                _voiceBannerTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+                _voiceBannerTimer.Tick += (s, e) =>
+                {
+                    _voiceBannerTimer.Stop();
+                    if (VoiceStatusBanner != null)
+                    {
+                        VoiceStatusBanner.Visibility = Visibility.Collapsed;
+                    }
+                };
+            }
+
+            _voiceBannerTimer.Stop();
+            _voiceBannerTimer.Start();
+        }
+
+        private void BindVoiceEvents()
+        {
+            _voiceService.HypothesisReceived -= OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged -= OnVoiceStatusChanged;
+            _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
+
+            _voiceService.HypothesisReceived += OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged += OnVoiceStatusChanged;
+            _voiceService.SessionCompleted += OnVoiceSessionCompleted;
+        }
+
+        private void UnbindVoiceEvents()
+        {
+            _voiceService.HypothesisReceived -= OnVoiceHypothesisReceived;
+            _voiceService.StatusChanged -= OnVoiceStatusChanged;
+            _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
+        }
+
+        private async void OnVoiceHypothesisReceived(object sender, string combinedHypothesis)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                if (VoiceHypothesisText != null)
+                {
+                    if (string.IsNullOrWhiteSpace(combinedHypothesis))
+                    {
+                        VoiceHypothesisText.Text = "Speak now...";
+                        VoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
+                    }
+                    else
+                    {
+                        VoiceHypothesisText.Text = $"\"{combinedHypothesis}\"";
+                        VoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextPrimaryBrush"];
+                    }
+                }
+            });
+        }
+
+        private async void OnVoiceStatusChanged(object sender, string status)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                if (VoiceRecordingStatusText != null && !string.IsNullOrWhiteSpace(status))
+                {
+                    VoiceRecordingStatusText.Text = status;
+                }
+            });
+        }
+
+        private async void OnVoiceSessionCompleted(object sender, VoiceRecognitionResult result)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                if (!_isRecognizingVoice) return;
+                FinishVoiceRecognition(result);
+            });
+        }
+
         private async void VoiceRecordButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isRecognizingVoice) return;
@@ -1171,64 +1294,114 @@ namespace WinAI
             VoiceRecordingGrid.Visibility = Visibility.Visible;
             _voiceSeconds = 0;
             VoiceRecordingTimerText.Text = "0:00";
+            VoiceRecordingStatusText.Text = "Listening...";
+            VoiceHypothesisText.Text = "Speak now...";
+            VoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
+            DoneVoiceRecordingButton.IsEnabled = true;
 
             if (_voiceTimer == null)
             {
-                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _voiceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
                 _voiceTimer.Tick += (s, args) =>
                 {
                     _voiceSeconds++;
-                    VoiceRecordingTimerText.Text = $"{_voiceSeconds / 60}:{(_voiceSeconds % 60):D2}";
+                    int totalSeconds = _voiceSeconds / 2;
+                    VoiceRecordingTimerText.Text = $"{totalSeconds / 60}:{(totalSeconds % 60):D2}";
+
+                    if (VoicePulseDot != null)
+                    {
+                        VoicePulseDot.Opacity = (_voiceSeconds % 2 == 0) ? 0.40 : 0.15;
+                    }
+                    if (VoiceWave1 != null && VoiceWave2 != null && VoiceWave3 != null && VoiceWave4 != null)
+                    {
+                        int step = _voiceSeconds % 4;
+                        VoiceWave1.Height = step == 0 ? 12 : (step == 1 ? 6 : 9);
+                        VoiceWave2.Height = step == 1 ? 16 : (step == 2 ? 8 : 13);
+                        VoiceWave3.Height = step == 2 ? 14 : (step == 3 ? 7 : 10);
+                        VoiceWave4.Height = step == 3 ? 10 : (step == 0 ? 5 : 8);
+                    }
                 };
             }
             _voiceTimer.Start();
 
-            await _voiceService.StartRecordingAsync();
+            BindVoiceEvents();
+            var startResult = await _voiceService.StartRecordingAsync();
+            if (!startResult.Success)
+            {
+                _voiceTimer?.Stop();
+                UnbindVoiceEvents();
+                VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+                NormalInputGrid.Visibility = Visibility.Visible;
+                _isRecognizingVoice = false;
+
+                ShowVoiceErrorBanner(startResult.ErrorMessage);
+            }
         }
 
         private async void CancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
         {
             _voiceTimer?.Stop();
+            UnbindVoiceEvents();
             await _voiceService.CancelRecordingAsync();
 
             VoiceRecordingGrid.Visibility = Visibility.Collapsed;
             NormalInputGrid.Visibility = Visibility.Visible;
             _isRecognizingVoice = false;
+
+            InputTextBox.Focus(FocusState.Programmatic);
         }
 
-        private async void SendVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        private async void DoneVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isRecognizingVoice) return;
+
+            _voiceTimer?.Stop();
+            VoiceRecordingStatusText.Text = "Transcribing...";
+            DoneVoiceRecordingButton.IsEnabled = false;
+
+            var result = await _voiceService.StopRecordingAndTranscribeAsync();
+            FinishVoiceRecognition(result);
+        }
+
+        private void FinishVoiceRecognition(VoiceRecognitionResult result)
         {
             _voiceTimer?.Stop();
-            VoiceRecordingTimerText.Text = "Transcribing...";
-            SendVoiceRecordingButton.IsEnabled = false;
+            UnbindVoiceEvents();
 
-            try
+            VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            NormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+            DoneVoiceRecordingButton.IsEnabled = true;
+
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
             {
-                string transcribedText = await _voiceService.StopRecordingAndTranscribeAsync();
-
-                VoiceRecordingGrid.Visibility = Visibility.Collapsed;
-                NormalInputGrid.Visibility = Visibility.Visible;
-                _isRecognizingVoice = false;
-
-                if (!string.IsNullOrWhiteSpace(transcribedText))
+                string textToInsert = result.Text.Trim();
+                if (string.IsNullOrWhiteSpace(InputTextBox.Text))
                 {
-                    InputTextBox.Text = transcribedText;
-                    SendMessage();
+                    InputTextBox.Text = textToInsert;
                 }
+                else
+                {
+                    InputTextBox.Text = (InputTextBox.Text.Trim() + " " + textToInsert).Trim();
+                }
+
+                InputTextBox.SelectionStart = InputTextBox.Text.Length;
+                InputTextBox.Focus(FocusState.Programmatic);
+                UpdateSendButtonState();
             }
-            catch
+            else if (result != null && !result.Success && !string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
-                VoiceRecordingGrid.Visibility = Visibility.Collapsed;
-                NormalInputGrid.Visibility = Visibility.Visible;
-                _isRecognizingVoice = false;
+                ShowVoiceErrorBanner(result.ErrorMessage);
+                InputTextBox.Focus(FocusState.Programmatic);
             }
-            finally
+            else
             {
-                SendVoiceRecordingButton.IsEnabled = true;
+                ShowVoiceErrorBanner("Could not understand the recording.");
+                InputTextBox.Focus(FocusState.Programmatic);
             }
         }
 
-        private async void VoiceDictation_Click(object sender, RoutedEventArgs e)
+        private void VoiceDictation_Click(object sender, RoutedEventArgs e)
         {
             VoiceRecordButton_Click(sender, e);
         }
@@ -1276,12 +1449,18 @@ namespace WinAI
 
         private async void NewChat_Click(object sender, RoutedEventArgs e)
         {
-            Messages.Clear();
+            var def = GetApplicationDefaultModel();
+            SelectModelById(def.Item1, def.Item2);
             _currentSession = await _historyService.CreateNewSessionAsync(_selectedModel?.Id);
-            InputTextBox.Text = string.Empty;
+            if (_currentSession != null)
+            {
+                _currentSession.ProviderId = _currentProviderId;
+                _currentSession.SelectedModelId = _currentModelId;
+            }
+            Messages.Clear();
+            if (InputTextBox != null) InputTextBox.Text = string.Empty;
             ClearPendingAttachment();
             UpdateSendButtonState();
-            InputTextBox.Focus(FocusState.Programmatic);
         }
 
         private async void ClearChat_Click(object sender, RoutedEventArgs e)

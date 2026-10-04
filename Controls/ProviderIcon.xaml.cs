@@ -1,17 +1,12 @@
 using System;
-using Windows.UI;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Automation;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 
 namespace WinAI.Controls
 {
     /// <summary>
-    /// Reusable provider brand icon badge component.
-    /// Standardizes provider icon geometries, dimensions, and authentic brand color palettes
-    /// across the Chat Header, Switch AI Selector, Conversations List, and Key Vault.
+    /// Backward-compatible adapter for WinAIProviderIcon.
     /// </summary>
     public sealed partial class ProviderIcon : UserControl
     {
@@ -83,147 +78,20 @@ namespace WinAI.Controls
 
         public void UpdateVisuals()
         {
-            if (RootBorder == null || IconPresenter == null) return;
+            if (InternalIcon == null) return;
 
-            RootBorder.Width = IconSize;
-            RootBorder.Height = IconSize;
-            RootBorder.CornerRadius = BadgeCornerRadius;
-            RootBorder.Background = GetBrandBrush(ProviderId);
-            RootBorder.Opacity = IsDimmed ? 0.45 : 1.0;
-
-            IconPresenter.Content = CreateIconGraphic(ProviderId, IconSize);
-
-            string pName = !string.IsNullOrWhiteSpace(ProviderId) ? ProviderId : "AI";
-            AutomationProperties.SetName(this, $"{pName} provider icon");
+            InternalIcon.ProviderId = ProviderId;
+            InternalIcon.IconSize = IconSize;
+            InternalIcon.BadgeCornerRadius = BadgeCornerRadius;
+            InternalIcon.IsDimmed = IsDimmed;
+            InternalIcon.UpdateVisuals();
         }
 
-        public static Brush GetBrandBrush(string providerId)
-        {
-            switch (providerId?.ToLowerInvariant())
-            {
-                case "openai":
-                case "chatgpt":
-                    return new SolidColorBrush(Color.FromArgb(255, 16, 163, 127)); // #10A37F Emerald
-                case "gemini":
-                case "google":
-                    return new SolidColorBrush(Color.FromArgb(255, 66, 133, 244)); // #4285F4 Google Blue
-                case "claude":
-                case "anthropic":
-                    return new SolidColorBrush(Color.FromArgb(255, 217, 119, 6));  // #D97706 Warm Amber
-                case "deepseek":
-                    return new SolidColorBrush(Color.FromArgb(255, 0, 102, 255));  // #0066FF DeepSeek Blue
-                case "xai":
-                case "grok":
-                    return new SolidColorBrush(Color.FromArgb(255, 17, 17, 17));   // #111111 xAI Black
-                case "perplexity":
-                    return new SolidColorBrush(Color.FromArgb(255, 32, 178, 170)); // #20B2AA Teal
-                default:
-                    return new SolidColorBrush(Color.FromArgb(255, 0, 120, 215));  // #0078D7 Windows Blue
-            }
-        }
+        public static Brush GetBrandBrush(string providerId) => WinAIProviderIcon.GetBrandBrush(providerId);
 
         public static FrameworkElement CreateIconGraphic(string providerId, double parentSize = 28)
         {
-            double glyphScale = Math.Max(12, parentSize * 0.58);
-
-            switch (providerId?.ToLowerInvariant())
-            {
-                case "openai":
-                case "chatgpt":
-                    return new Path
-                    {
-                        Data = (Geometry)Windows.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
-                            typeof(Geometry),
-                            "M12,2 C10.9,2 10,2.9 10,4 C10,4.4 10.1,4.7 10.3,5 C9.8,5.1 9.4,5.4 9.1,5.8 C8.4,5.3 7.5,5 6.5,5 C4.6,5 3,6.6 3,8.5 C3,9.1 3.2,9.7 3.5,10.2 C2.6,10.6 2,11.5 2,12.5 C2,13.9 3.1,15 4.5,15 C4.9,15 5.2,14.9 5.5,14.7 C5.8,15.5 6.6,16 7.5,16 C8.4,16 9.2,15.5 9.5,14.7 C9.8,15.5 10.6,16 11.5,16 C12.9,16 14,14.9 14,13.5 C14,12.9 13.8,12.3 13.5,11.8 C14.4,11.4 15,10.5 15,9.5 C15,8.1 13.9,7 12.5,7 C12.1,7 11.8,7.1 11.5,7.3 C11.2,6.5 10.4,6 9.5,6 C9.3,6 9.2,6 9,6.1 C9,5.4 9.4,4.8 10,4.4 C10.3,4.8 10.8,5 11.3,5 C12.4,5 13.3,4.1 13.3,3 C13.3,2.4 12.7,2 12,2 Z"),
-                        Fill = new SolidColorBrush(Colors.White),
-                        Stretch = Stretch.Uniform,
-                        Width = glyphScale,
-                        Height = glyphScale,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                case "gemini":
-                case "google":
-                    return new Path
-                    {
-                        Data = (Geometry)Windows.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
-                            typeof(Geometry),
-                            "M12,2 C12,7.5 16.5,12 22,12 C16.5,12 12,16.5 12,22 C12,16.5 7.5,12 2,12 C7.5,12 12,7.5 12,2 Z"),
-                        Fill = new SolidColorBrush(Colors.White),
-                        Stretch = Stretch.Uniform,
-                        Width = glyphScale,
-                        Height = glyphScale,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                case "claude":
-                case "anthropic":
-                    return new Path
-                    {
-                        Data = (Geometry)Windows.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
-                            typeof(Geometry),
-                            "M11,2 L13,2 L13,8 L17.2,3.8 L18.6,5.2 L14.4,9.4 L20,9.4 L20,11.4 L14.4,11.4 L18.6,15.6 L17.2,17 L13,12.8 L13,19 L11,19 L11,12.8 L6.8,17 L5.4,15.6 L9.6,11.4 L4,11.4 L4,9.4 L9.6,9.4 L5.4,5.2 L6.8,3.8 L11,8 Z"),
-                        Fill = new SolidColorBrush(Colors.White),
-                        Stretch = Stretch.Uniform,
-                        Width = glyphScale,
-                        Height = glyphScale,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                case "deepseek":
-                    return new Path
-                    {
-                        Data = (Geometry)Windows.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
-                            typeof(Geometry),
-                            "M4,15 C4,10 8,6 14,6 C19,6 22,9 22,12 C22,15 19,18 14,18 C11,18 9,17.5 7,16 L3,18 L4,15 Z M16,10 C15.4,10 15,10.4 15,11 C15,11.6 15.4,12 16,12 C16.6,12 17,11.6 17,11 C17,10.4 16.6,10 16,10 Z"),
-                        Fill = new SolidColorBrush(Colors.White),
-                        Stretch = Stretch.Uniform,
-                        Width = glyphScale,
-                        Height = glyphScale,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                case "xai":
-                case "grok":
-                    return new TextBlock
-                    {
-                        Text = "xI",
-                        FontFamily = new FontFamily("Segoe UI"),
-                        FontWeight = Windows.UI.Text.FontWeights.Bold,
-                        FontSize = Math.Max(11, glyphScale * 0.9),
-                        Foreground = new SolidColorBrush(Colors.White),
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                case "perplexity":
-                    return new Path
-                    {
-                        Data = (Geometry)Windows.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
-                            typeof(Geometry),
-                            "M11,3 L13,3 L13,7 L17,7 L17,9 L13,9 L13,13 L17,13 L17,15 L13,15 L13,19 L11,19 L11,15 L7,15 L7,13 L11,13 L11,9 L7,9 L7,7 L11,7 Z M9,9 L9,13 L11,13 L11,9 Z"),
-                        Fill = new SolidColorBrush(Colors.White),
-                        Stretch = Stretch.Uniform,
-                        Width = glyphScale,
-                        Height = glyphScale,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-
-                default:
-                    return new TextBlock
-                    {
-                        Text = "★",
-                        FontSize = Math.Max(12, glyphScale * 0.9),
-                        Foreground = new SolidColorBrush(Colors.White),
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-            }
+            return WinAIProviderIcon.CreateVectorGraphic(providerId, Windows.UI.Colors.White, parentSize * 0.6);
         }
     }
 }

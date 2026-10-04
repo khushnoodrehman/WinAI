@@ -18,8 +18,8 @@
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
-    <PackageCertificateKeyFile>WinAI_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <PackageCertificateThumbprint>F149023902A9A1920F91814159DFE1DC746F77F7</PackageCertificateThumbprint>
+    <PackageCertificateKeyFile>WinAI_SevenLabs.pfx</PackageCertificateKeyFile>
+    <PackageCertificateThumbprint>4B0C13C109D3D73D5EDDC91C73FD5C975460F415</PackageCertificateThumbprint>
     <PackageCertificatePassword>WinAI</PackageCertificatePassword>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
@@ -161,9 +161,13 @@
     <Compile Include="Controls\ProviderIcon.xaml.cs">
       <DependentUpon>ProviderIcon.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\WinAIProviderIcon.xaml.cs">
+      <DependentUpon>WinAIProviderIcon.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ModelSwitcherRowItem.xaml.cs">
       <DependentUpon>ModelSwitcherRowItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\WinAIAttachmentFlyout.cs" />
     <Compile Include="Services\CredentialVaultService.cs" />
     <Compile Include="Services\ApiKeyService.cs" />
     <Compile Include="Services\ChatHistoryService.cs" />
@@ -171,6 +175,7 @@
     <Compile Include="Services\VoiceService.cs" />
     <Compile Include="Services\AiChatService.cs" />
     <Compile Include="Services\ThemeService.cs" />
+    <Compile Include="Services\AppSettingsService.cs" />
     <Compile Include="Models\ChatMessage.cs" />
     <Compile Include="Models\ChatSession.cs" />
     <Compile Include="Models\AiModelItem.cs" />
@@ -187,7 +192,17 @@
     <Compile Include="Services\Providers\DeepSeekProvider.cs" />
     <Compile Include="Services\Providers\GrokProvider.cs" />
     <Compile Include="Services\Providers\PerplexityProvider.cs" />
+    <Compile Include="Services\Providers\OpenRouterProvider.cs" />
+    <Compile Include="Services\Providers\CustomAiProvider.cs" />
     <Compile Include="Services\Providers\AiProviderRegistry.cs" />
+    <Compile Include="Services\ProviderDiagnosticService.cs" />
+    <Compile Include="Services\LiveTileService.cs" />
+    <Compile Include="Views\AiProvidersPage.xaml.cs">
+      <DependentUpon>AiProvidersPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ProviderDetailPage.xaml.cs">
+      <DependentUpon>ProviderDetailPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Data\Models\MessageRole.cs" />
     <Compile Include="Data\Models\ConversationEntity.cs" />
     <Compile Include="Data\Models\MessageEntity.cs" />
@@ -211,11 +226,16 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="WinAI_SevenLabs.pfx" />
     <None Include="WinAI_TemporaryKey.pfx" />
     <None Include="WinAI.cer" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\Default.rd.xml" />
+    <Content Include="Assets\AppLogo.png" />
+    <Content Include="Assets\AppLogoWhite.png" />
+    <Content Include="Assets\TileColorfulSquare.png" />
+    <Content Include="Assets\TileColorfulWide.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" />
@@ -223,6 +243,27 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Providers\openai.png" />
+    <Content Include="Assets\Providers\gemini.png" />
+    <Content Include="Assets\Providers\claude.png" />
+    <Content Include="Assets\Providers\deepseek.png" />
+    <Content Include="Assets\Providers\xai.png" />
+    <Content Include="Assets\Providers\perplexity.png" />
+    <Content Include="Assets\Providers\custom.png" />
+    <Content Include="Assets\Providers\dark\openai.png" />
+    <Content Include="Assets\Providers\dark\gemini.png" />
+    <Content Include="Assets\Providers\dark\claude.png" />
+    <Content Include="Assets\Providers\dark\deepseek.png" />
+    <Content Include="Assets\Providers\dark\xai.png" />
+    <Content Include="Assets\Providers\dark\perplexity.png" />
+    <Content Include="Assets\Providers\dark\custom.png" />
+    <Content Include="Assets\Providers\light\openai.png" />
+    <Content Include="Assets\Providers\light\gemini.png" />
+    <Content Include="Assets\Providers\light\claude.png" />
+    <Content Include="Assets\Providers\light\deepseek.png" />
+    <Content Include="Assets\Providers\light\xai.png" />
+    <Content Include="Assets\Providers\light\perplexity.png" />
+    <Content Include="Assets\Providers\light\custom.png" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -249,6 +290,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Controls\WinAIProviderIcon.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Controls\ModelSwitcherRowItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -266,6 +311,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\KeyVaultPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\AiProvidersPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ProviderDetailPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

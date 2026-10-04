@@ -51,34 +51,110 @@
                         Padding="20,18"
                         Margin="0,0,0,16">
                     <StackPanel>
+                        <!-- App Brand Logo -->
+                        <Image Source="ms-appx:///Assets/AppLogo.png"
+                               Width="64"
+                               Height="64"
+                               Margin="0,0,0,14"
+                               HorizontalAlignment="Left"/>
+
                         <!-- App Title -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                             <TextBlock Text="Win"
-                                       FontSize="24"
+                                       FontSize="26"
                                        FontWeight="SemiBold"
                                        Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                             <TextBlock Text="AI"
-                                       FontSize="24"
+                                       FontSize="26"
                                        FontWeight="Bold"
                                        Foreground="{ThemeResource AppAccentBrush}"/>
                         </StackPanel>
 
-                        <TextBlock Text="Version 1.0 (Fall Creators Update)"
+                        <!-- Build Version & Publisher -->
+                        <TextBlock x:Name="AppVersionText"
+                                   Text="Build 1.0.0.0 (Fall Creators Update)"
                                    FontSize="13"
                                    Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                   Margin="0,0,0,2"/>
+
+                        <TextBlock Text="Publisher: SevenLabs"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource AppAccentBrush}"
                                    Margin="0,0,0,12"/>
 
                         <TextBlock Text="Your AI. Your Keys. Your Device."
                                    FontSize="14"
                                    FontWeight="SemiBold"
-                                   Foreground="{ThemeResource AppAccentBrush}"
-                                   Margin="0,0,0,10"/>
+                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                   Margin="0,0,0,8"/>
 
                         <TextBlock Text="A native, fast, and authentic Windows 10 Mobile application bringing modern AI providers to Windows Phone hardware with privacy, offline key storage, and Fluent-Metro design."
                                    FontSize="13.5"
                                    Foreground="{ThemeResource AppTextSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    LineHeight="19"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Developer & Open Source Card -->
+                <Border Background="{ThemeResource AppSurfaceBrush}"
+                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                        BorderThickness="1"
+                        Padding="20,18"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Developer"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="Created by Khushnood Rehman for Windows 10 Mobile."
+                                   FontSize="13"
+                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+
+                        <!-- GitHub Profile Button -->
+                        <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                Click="GithubProfile_Click"
+                                HorizontalAlignment="Stretch">
+                            <Grid Padding="12,10" Background="{ThemeResource AppItemPressedBrush}" CornerRadius="6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Code/Git Icon -->
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE943;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="20"
+                                           Foreground="{ThemeResource AppAccentBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,12,0"/>
+
+                                <!-- Developer Handle & Link Info -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="@khushnoodrehman"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource AppTextPrimaryBrush}"/>
+                                    <TextBlock Text="https://github.com/khushnoodrehman"
+                                               FontSize="11.5"
+                                               Foreground="{ThemeResource AppAccentBrush}"/>
+                                </StackPanel>
+
+                                <!-- External Link Icon -->
+                                <TextBlock Grid.Column="2"
+                                           Text="&#xE8A7;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button>
                     </StackPanel>
                 </Border>
 
@@ -102,8 +178,10 @@
 
                         <Button x:Name="RunTestsButton"
                                 Content="Run Database Verification Tests"
-                                Background="{ThemeResource AppButtonBackgroundBrush}"
-                                Foreground="{ThemeResource AppButtonForegroundBrush}"
+                                Background="{ThemeResource AppAccentBrush}"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Height="42"
                                 HorizontalAlignment="Stretch"
                                 Click="RunTestsButton_Click"/>
 

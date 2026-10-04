@@ -34,4 +34,5 @@ artifacts/
 # Temporary files and logs
 *.log
 *.tmp
+BundleArtifacts/
 generate_cert.ps1

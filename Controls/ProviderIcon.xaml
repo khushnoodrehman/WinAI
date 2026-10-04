@@ -2,18 +2,10 @@
     x:Class="WinAI.Controls.ProviderIcon"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:WinAI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Border x:Name="RootBorder"
-            Width="28"
-            Height="28"
-            CornerRadius="6"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Center">
-        <ContentPresenter x:Name="IconPresenter"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"/>
-    </Border>
+    <controls:WinAIProviderIcon x:Name="InternalIcon" />
 </UserControl>

@@ -60,7 +60,7 @@ namespace WinAI.Controls
                 UnselectedIndicator.Visibility = Visibility.Collapsed;
 
                 RootGrid.Opacity = 0.65;
-                RootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                VisualStateManager.GoToState(this, "Normal", false);
                 accessibleName = $"{Descriptor.DisplayName}, {Descriptor.ProviderName}, API key required";
             }
             else if (IsCurrent)
@@ -74,8 +74,7 @@ namespace WinAI.Controls
                 KeyRequiredIndicator.Visibility = Visibility.Collapsed;
 
                 RootGrid.Opacity = 1.0;
-                // Subtle Windows Blue selection highlight
-                RootGrid.Background = new SolidColorBrush(Color.FromArgb(28, 0, 120, 215));
+                VisualStateManager.GoToState(this, "Selected", false);
                 accessibleName = $"{Descriptor.DisplayName}, {Descriptor.ProviderName}, selected";
             }
             else
@@ -89,7 +88,7 @@ namespace WinAI.Controls
                 KeyRequiredIndicator.Visibility = Visibility.Collapsed;
 
                 RootGrid.Opacity = 1.0;
-                RootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                VisualStateManager.GoToState(this, "Normal", false);
                 accessibleName = $"{Descriptor.DisplayName}, {Descriptor.ProviderName}, available";
             }
 
@@ -107,28 +106,23 @@ namespace WinAI.Controls
             return string.Join(" • ", parts);
         }
 
-        private void RootGrid_PointerEntered(object sender, PointerRoutedEventArgs e)
+        private void SetPressedVisual(bool isPressed)
         {
-            if (!IsCurrent)
+            if (isPressed)
             {
-                if (Application.Current.Resources.TryGetValue("AppItemPressedBrush", out object brush))
-                {
-                    RootGrid.Background = brush as Brush;
-                }
-            }
-        }
-
-        private void RootGrid_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            if (IsCurrent)
-            {
-                RootGrid.Background = new SolidColorBrush(Color.FromArgb(28, 0, 120, 215));
+                VisualStateManager.GoToState(this, IsCurrent ? "SelectedPressed" : "Pressed", true);
             }
             else
             {
-                RootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                VisualStateManager.GoToState(this, IsCurrent ? "Selected" : "Normal", true);
             }
         }
+
+        private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e) => SetPressedVisual(true);
+        private void RootGrid_PointerReleased(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerExited(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerCanceled(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerCaptureLost(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
 
         private void RootGrid_Tapped(object sender, TappedRoutedEventArgs e)
         {

@@ -128,6 +128,9 @@ namespace WinAI.Services
                 // Not found
             }
 
+            // Wipe cached models for this provider so no stale models remain
+            ModelService.Instance.ClearModelsForProvider(id);
+
             VaultStateChanged?.Invoke(this, EventArgs.Empty);
         }
 

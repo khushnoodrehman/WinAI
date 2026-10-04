@@ -45,18 +45,16 @@ namespace WinAI.Controls
             TimeAgoText.Text = conv.TimeAgo ?? string.Empty;
         }
 
-        private void RootGrid_PointerEntered(object sender, PointerRoutedEventArgs e)
+        private void SetPressedVisual(bool isPressed)
         {
-            if (Application.Current.Resources.TryGetValue("AppItemPressedBrush", out object brush))
-            {
-                RootGrid.Background = brush as Brush;
-            }
+            VisualStateManager.GoToState(this, isPressed ? "Pressed" : "Normal", true);
         }
 
-        private void RootGrid_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            RootGrid.Background = new SolidColorBrush(Colors.Transparent);
-        }
+        private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e) => SetPressedVisual(true);
+        private void RootGrid_PointerReleased(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerExited(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerCanceled(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
+        private void RootGrid_PointerCaptureLost(object sender, PointerRoutedEventArgs e) => SetPressedVisual(false);
 
         private void RootGrid_Tapped(object sender, TappedRoutedEventArgs e)
         {

@@ -1,3 +1,4 @@
+using System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -16,9 +17,25 @@ namespace WinAI.Views
         {
             base.OnNavigatedTo(e);
 
+            try
+            {
+                var v = Windows.ApplicationModel.Package.Current.Id.Version;
+                AppVersionText.Text = $"Build {v.Major}.{v.Minor}.{v.Build}.{v.Revision} (Fall Creators Update)";
+            }
+            catch { }
+
             var navManager = SystemNavigationManager.GetForCurrentView();
             navManager.BackRequested += OnBackRequested;
             navManager.AppViewBackButtonVisibility = AppViewBackButtonVisibility.Visible;
+        }
+
+        private async void GithubProfile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await Windows.System.Launcher.LaunchUriAsync(new System.Uri("https://github.com/khushnoodrehman"));
+            }
+            catch { }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)

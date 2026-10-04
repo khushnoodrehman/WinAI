@@ -28,14 +28,11 @@ namespace WinAI.Services.Providers
                 {
                     var caps = ModelCapabilities.Text;
                     if (item.Id.Contains("vision")) caps |= ModelCapabilities.Vision;
-                    list.Add(new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description));
+                    var desc = new AiModelDescriptor(item.Id, item.DisplayName, Id, DisplayName, caps, configured, item.Description);
+                    desc.IsAvailable = item.IsAvailable;
+                    desc.Status = item.Status;
+                    list.Add(desc);
                 }
-            }
-            else
-            {
-                list.Add(new AiModelDescriptor("grok-2-1212", "Grok 2", Id, DisplayName, ModelCapabilities.Text, configured));
-                list.Add(new AiModelDescriptor("grok-2-vision-1212", "Grok 2 Vision", Id, DisplayName, ModelCapabilities.Text | ModelCapabilities.Vision, configured));
-                list.Add(new AiModelDescriptor("grok-beta", "Grok Beta", Id, DisplayName, ModelCapabilities.Text, configured));
             }
 
             return list;
@@ -56,6 +53,13 @@ namespace WinAI.Services.Providers
             }
 
             var messagesPayload = new List<object>();
+            string currentDateTimeStr = DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt");
+            string timeZoneStr = TimeZoneInfo.Local.DisplayName;
+            messagesPayload.Add(new
+            {
+                role = "system",
+                content = $"You are Grok, an AI assistant developed by xAI, accessible via WinAI on Windows 10 Mobile. The accurate real-time date and time is {currentDateTimeStr} ({timeZoneStr}). Always use this exact current date and time when asked about today's date, day, year, or time. If asked about live breaking news, live sports match scores, or real-time events that occurred after your knowledge training cutoff, state your knowledge cutoff date honestly and advise checking the browser for live updates, rather than guessing or denying that events took place."
+            });
             var context = conversationHistory.Skip(Math.Max(0, conversationHistory.Count - 16));
             foreach (var msg in context)
             {

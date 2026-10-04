@@ -21,8 +21,8 @@ namespace WinAI.Services.Providers
         IReadOnlyList<IAiProvider> GetProviders();
         IAiProvider GetProvider(string providerId);
         bool IsProviderConfigured(string providerId);
-        IReadOnlyList<AiModelDescriptor> GetAllModels();
-        IReadOnlyList<AiModelDescriptor> GetModelsForProvider(string providerId);
+        IReadOnlyList<AiModelDescriptor> GetAllModels(bool onlyAvailable = false);
+        IReadOnlyList<AiModelDescriptor> GetModelsForProvider(string providerId, bool onlyAvailable = false);
         AiModelDescriptor GetModel(string providerId, string modelId);
         bool IsModelAvailable(string providerId, string modelId);
         ModelSwitchResult TrySwitchModel(string currentProviderId, string currentModelId, string targetProviderId, string targetModelId);
@@ -48,9 +48,11 @@ namespace WinAI.Services.Providers
             RegisterProvider(new OpenAiProvider());
             RegisterProvider(new GeminiProvider());
             RegisterProvider(new ClaudeProvider());
+            RegisterProvider(new OpenRouterProvider());
             RegisterProvider(new DeepSeekProvider());
             RegisterProvider(new GrokProvider());
             RegisterProvider(new PerplexityProvider());
+            RegisterProvider(new CustomAiProvider());
         }
 
         public void RegisterProvider(IAiProvider provider)
@@ -83,21 +85,31 @@ namespace WinAI.Services.Providers
             return provider != null && provider.IsConfigured;
         }
 
-        public IReadOnlyList<AiModelDescriptor> GetAllModels()
+        public IReadOnlyList<AiModelDescriptor> GetAllModels(bool onlyAvailable = false)
         {
             var list = new List<AiModelDescriptor>();
             foreach (var p in _providers.Values)
             {
-                list.AddRange(p.GetModels());
+                var models = p.GetModels();
+                if (onlyAvailable)
+                {
+                    models = models.Where(m => m.IsAvailable).ToList();
+                }
+                list.AddRange(models);
             }
             return list;
         }
 
-        public IReadOnlyList<AiModelDescriptor> GetModelsForProvider(string providerId)
+        public IReadOnlyList<AiModelDescriptor> GetModelsForProvider(string providerId, bool onlyAvailable = false)
         {
             var provider = GetProvider(providerId);
             if (provider == null) return new List<AiModelDescriptor>();
-            return provider.GetModels();
+            var models = provider.GetModels();
+            if (onlyAvailable)
+            {
+                return models.Where(m => m.IsAvailable).ToList();
+            }
+            return models;
         }
 
         public AiModelDescriptor GetModel(string providerId, string modelId)
@@ -217,6 +229,7 @@ namespace WinAI.Services.Providers
             if (lower.Contains("perplexity") || lower.Contains("sonar")) return "perplexity";
             if (lower.Contains("groq")) return "groq";
             if (lower.Contains("openrouter")) return "openrouter";
+            if (lower.Contains("custom")) return "custom";
             return "openai";
         }
     }

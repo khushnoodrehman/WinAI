@@ -2,14 +2,45 @@
     x:Class="WinAI.Controls.VaultProviderItem"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:WinAI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
     <Grid x:Name="RootGrid"
           Background="Transparent"
-          PointerEntered="RootGrid_PointerEntered"
-          PointerExited="RootGrid_PointerExited">
+          PointerPressed="RootGrid_PointerPressed"
+          PointerReleased="RootGrid_PointerReleased"
+          PointerExited="RootGrid_PointerExited"
+          PointerCanceled="RootGrid_PointerCanceled"
+          PointerCaptureLost="RootGrid_PointerCaptureLost"
+          Tapped="RootGrid_Tapped">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource AppItemPressedBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,26 +52,21 @@
             <Grid.ColumnDefinitions>
                 <!-- Column 0: Provider Icon -->
                 <ColumnDefinition Width="Auto" />
-                <!-- Column 1: Provider Name & Status -->
+                <!-- Column 1: Provider Name, Masked Key & Status -->
                 <ColumnDefinition Width="*" />
-                <!-- Column 2: Masked Key, Eye Button, Overflow Menu -->
+                <!-- Column 2: Overflow Three-Dot Menu (for configured) / Add Action -->
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Brand Icon Box -->
-            <Border Grid.Column="0"
-                    x:Name="IconBorder"
-                    Width="38"
-                    Height="38"
-                    CornerRadius="8"
-                    VerticalAlignment="Center"
-                    Margin="0,0,14,0">
-                <ContentControl x:Name="IconContentPresenter"
-                                HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center" />
-            </Border>
+            <!-- Reusable Unified Brand Icon -->
+            <controls:WinAIProviderIcon x:Name="BrandIcon"
+                                        Grid.Column="0"
+                                        IconSize="38"
+                                        BadgeCornerRadius="8"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,14,0" />
 
-            <!-- Provider Name & Connection Status -->
+            <!-- Provider Name, Masked Key (••••••••••••••••) & Status -->
             <StackPanel Grid.Column="1"
                         VerticalAlignment="Center"
                         Margin="0,0,10,0">
@@ -50,71 +76,80 @@
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource AppTextPrimaryBrush}" />
 
-                <!-- Status indicator: ● Connected / ● Not configured -->
-                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                <!-- Masked Key: Never plaintext -->
+                <TextBlock x:Name="MaskedKeyText"
+                           Text="••••••••••••••••"
+                           FontSize="12"
+                           FontFamily="Segoe UI"
+                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                           Margin="0,2,0,2" />
+
+                <!-- Status indicator: ● Configured / ○ Not configured -->
+                <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
                     <TextBlock x:Name="StatusDot"
                                Text="●"
                                FontSize="9"
-                               Foreground="#10A37F"
+                               Foreground="{ThemeResource WinAISuccessBrush}"
                                VerticalAlignment="Center"
                                Margin="0,0,5,0" />
                     <TextBlock x:Name="StatusText"
-                               Text="Connected"
+                               Text="Configured"
                                FontSize="11.5"
-                               Foreground="#10A37F"
+                               Foreground="{ThemeResource WinAISuccessBrush}"
                                VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
 
-            <!-- Masked Key, Reveal Eye Button, and Three-Dot Menu -->
+            <!-- Actions Column -->
             <StackPanel Grid.Column="2"
                         Orientation="Horizontal"
                         VerticalAlignment="Center">
-                <!-- Masked Key -->
-                <TextBlock x:Name="MaskedKeyText"
-                           Text="••••••••••••"
-                           FontSize="12"
-                           FontFamily="Segoe UI"
-                           Foreground="{ThemeResource AppTextSecondaryBrush}"
-                           VerticalAlignment="Center"
-                           Margin="0,0,10,0" />
 
-                <!-- Eye / Reveal Button -->
-                <Button x:Name="EyeButton"
-                        Width="32"
-                        Height="32"
+                <!-- Subtle '+ Add' pill button for unconfigured providers -->
+                <Border x:Name="AddKeyRowContainer"
+                        Visibility="Collapsed"
                         Background="Transparent"
-                        Padding="0"
-                        Margin="0,0,4,0"
-                        Click="EyeButton_Click"
-                        ToolTipService.ToolTip="Reveal / Mask Key">
-                    <TextBlock x:Name="EyeIcon"
-                               Text="&#xE890;"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="14"
-                               Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                </Button>
+                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <Button x:Name="AddKeyRowButton"
+                            Background="Transparent"
+                            Padding="8,4"
+                            Click="AddKeyRowButton_Click">
+                        <TextBlock Text="+ Add"
+                                   FontSize="12"
+                                   FontFamily="Segoe UI"
+                                   Foreground="{ThemeResource AppAccentBrush}" />
+                    </Button>
+                </Border>
 
-                <!-- Three-Dot Overflow Menu -->
+                <!-- Three-Dot Overflow Menu for Configured Provider Rows (Phase 3 Requirement 2) -->
                 <Button x:Name="MoreButton"
-                        Width="32"
-                        Height="32"
+                        Width="36"
+                        Height="36"
                         Background="Transparent"
                         Padding="0"
-                        ToolTipService.ToolTip="More Options">
+                        ToolTipService.ToolTip="Key options">
                     <TextBlock Text="&#xE712;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="14"
-                               Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                               Foreground="{ThemeResource AppTextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
                     <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="Edit Key" Click="MenuEdit_Click" />
-                            <MenuFlyoutItem Text="Test Connection" Click="MenuTest_Click" />
+                        <MenuFlyout x:Name="ItemMenuFlyout"
+                                    MenuFlyoutPresenterStyle="{StaticResource ModernMenuFlyoutStyle}">
+                            <MenuFlyoutItem x:Name="CopyMenuItem"
+                                            Text="Copy API Key"
+                                            Click="MenuCopy_Click" />
+                            <MenuFlyoutItem x:Name="RemoveMenuItem"
+                                            Text="Remove API Key"
+                                            Foreground="{ThemeResource WinAIErrorBrush}"
+                                            Click="MenuRemove_Click" />
                             <MenuFlyoutSeparator />
-                            <MenuFlyoutItem x:Name="DeleteMenuItem"
-                                            Text="Delete Key"
-                                            Foreground="#E04040"
-                                            Click="MenuDelete_Click" />
+                            <MenuFlyoutItem x:Name="CancelMenuItem"
+                                            Text="Cancel"
+                                            Click="MenuCancel_Click" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

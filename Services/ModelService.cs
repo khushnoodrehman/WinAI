@@ -9,6 +9,7 @@ using Windows.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WinAI.Models;
+using WinAI.Services.Providers;
 
 namespace WinAI.Services
 {
@@ -50,69 +51,52 @@ namespace WinAI.Services
 
             // 1. Populate built-in fallback models so the app always has working models offline
             InitializeDefaultModels();
+        }
 
-            // 2. Load locally cached models from persistent disk asynchronously
-            var _ = LoadCacheFromDiskAsync();
+        private bool _isInitialized = false;
+
+        /// <summary>
+        /// Asynchronously loads cached models from persistent disk storage on app startup.
+        /// </summary>
+        public async Task InitializeAsync()
+        {
+            if (_isInitialized) return;
+            await LoadCacheFromDiskAsync();
+            _isInitialized = true;
         }
 
         #region Default Fallback Models
 
         private void InitializeDefaultModels()
         {
-            _providerModelsCache["openai"] = new List<AiModelItem>
+            // Models are ONLY populated when an API key is configured by the user,
+            // tested against the provider's REST API, and cached locally on disk.
+            var knownProviders = new[] { "openai", "gemini", "claude", "perplexity", "deepseek", "xai", "groq", "openrouter", "custom" };
+            foreach (var p in knownProviders)
             {
-                new AiModelItem { Id = "gpt-4o", DisplayName = "GPT-4o", ProviderName = "OpenAI" },
-                new AiModelItem { Id = "gpt-4o-mini", DisplayName = "GPT-4o Mini", ProviderName = "OpenAI" },
-                new AiModelItem { Id = "o1-mini", DisplayName = "o1 Mini", ProviderName = "OpenAI" },
-                new AiModelItem { Id = "gpt-3.5-turbo", DisplayName = "GPT-3.5 Turbo", ProviderName = "OpenAI" }
-            };
+                if (!_providerModelsCache.ContainsKey(p))
+                {
+                    _providerModelsCache[p] = new List<AiModelItem>();
+                }
+            }
+        }
 
-            _providerModelsCache["gemini"] = new List<AiModelItem>
+        /// <summary>
+        /// Clears cached models for a provider when its API key is removed.
+        /// </summary>
+        public void ClearModelsForProvider(string providerId)
+        {
+            if (string.IsNullOrWhiteSpace(providerId)) return;
+            string key = AiProviderRegistry.NormalizeProviderId(providerId);
+            lock (_providerModelsCache)
             {
-                new AiModelItem { Id = "gemini-1.5-flash", DisplayName = "Gemini 1.5 Flash (Fast/High Quota)", ProviderName = "Google Gemini" },
-                new AiModelItem { Id = "gemini-2.0-flash", DisplayName = "Gemini 2.0 Flash", ProviderName = "Google Gemini" },
-                new AiModelItem { Id = "gemini-1.5-pro", DisplayName = "Gemini 1.5 Pro (Reasoning)", ProviderName = "Google Gemini" }
-            };
-
-            _providerModelsCache["claude"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "claude-3-5-sonnet-20241022", DisplayName = "Claude 3.5 Sonnet", ProviderName = "Anthropic Claude" },
-                new AiModelItem { Id = "claude-3-5-haiku-20241022", DisplayName = "Claude 3.5 Haiku", ProviderName = "Anthropic Claude" },
-                new AiModelItem { Id = "claude-3-opus-20240229", DisplayName = "Claude 3 Opus", ProviderName = "Anthropic Claude" }
-            };
-
-            _providerModelsCache["perplexity"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "sonar", DisplayName = "Sonar (Search)", ProviderName = "Perplexity AI" },
-                new AiModelItem { Id = "sonar-pro", DisplayName = "Sonar Pro", ProviderName = "Perplexity AI" },
-                new AiModelItem { Id = "sonar-reasoning", DisplayName = "Sonar Reasoning", ProviderName = "Perplexity AI" }
-            };
-
-            _providerModelsCache["deepseek"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "deepseek-chat", DisplayName = "DeepSeek-V3 (Chat)", ProviderName = "DeepSeek" },
-                new AiModelItem { Id = "deepseek-reasoner", DisplayName = "DeepSeek-R1 (Reasoner)", ProviderName = "DeepSeek" }
-            };
-
-            _providerModelsCache["xai"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "grok-2-1212", DisplayName = "Grok 2", ProviderName = "xAI" },
-                new AiModelItem { Id = "grok-2-vision-1212", DisplayName = "Grok 2 Vision", ProviderName = "xAI" },
-                new AiModelItem { Id = "grok-beta", DisplayName = "Grok Beta", ProviderName = "xAI" }
-            };
-
-            _providerModelsCache["groq"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "llama-3.3-70b-versatile", DisplayName = "Llama 3.3 70B", ProviderName = "Groq" },
-                new AiModelItem { Id = "llama-3.1-8b-instant", DisplayName = "Llama 3.1 8B", ProviderName = "Groq" },
-                new AiModelItem { Id = "mixtral-8x7b-32768", DisplayName = "Mixtral 8x7B", ProviderName = "Groq" }
-            };
-
-            _providerModelsCache["openrouter"] = new List<AiModelItem>
-            {
-                new AiModelItem { Id = "meta-llama/llama-3.3-70b-instruct", DisplayName = "Llama 3.3 70B", ProviderName = "OpenRouter" },
-                new AiModelItem { Id = "anthropic/claude-3.5-sonnet", DisplayName = "Claude 3.5 Sonnet", ProviderName = "OpenRouter" }
-            };
+                if (_providerModelsCache.ContainsKey(key))
+                {
+                    _providerModelsCache[key].Clear();
+                }
+            }
+            var _ = SaveCacheToDiskAsync();
+            ModelStatusChanged?.Invoke(this, key);
         }
 
         #endregion
@@ -191,6 +175,7 @@ namespace WinAI.Services
             else if (key.Contains("xai") || key.Contains("grok")) key = "xai";
             else if (key.Contains("groq")) key = "groq";
             else if (key.Contains("openrouter")) key = "openrouter";
+            else if (key.Contains("custom")) key = "custom";
             else key = "openai";
 
             lock (_providerModelsCache)
@@ -214,6 +199,71 @@ namespace WinAI.Services
         {
             var list = GetModelsForProvider(providerId);
             return list.Count > 0 ? list[0].DisplayName : "GPT-4o";
+        }
+
+        public event EventHandler<string> ModelStatusChanged;
+
+        public void UpdateModelStatus(string providerId, string modelId, bool isAvailable, string status, string details = null, long? latencyMs = null)
+        {
+            if (string.IsNullOrWhiteSpace(providerId) || string.IsNullOrWhiteSpace(modelId)) return;
+
+            string key = AiProviderRegistry.NormalizeProviderId(providerId);
+            lock (_providerModelsCache)
+            {
+                if (!_providerModelsCache.TryGetValue(key, out var list) || list == null)
+                {
+                    list = new List<AiModelItem>();
+                    _providerModelsCache[key] = list;
+                }
+
+                var match = list.FirstOrDefault(m => string.Equals(m.Id, modelId, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    match.IsAvailable = isAvailable;
+                    match.Status = status;
+                    match.StatusDetails = details;
+                    match.LastValidatedUtc = DateTime.UtcNow;
+                    if (latencyMs.HasValue) match.LatencyMs = latencyMs.Value;
+                }
+                else
+                {
+                    list.Add(new AiModelItem
+                    {
+                        Id = modelId,
+                        DisplayName = modelId,
+                        ProviderName = providerId,
+                        IsAvailable = isAvailable,
+                        Status = status,
+                        StatusDetails = details,
+                        LastValidatedUtc = DateTime.UtcNow,
+                        LatencyMs = latencyMs
+                    });
+                }
+            }
+
+            var _ = SaveCacheToDiskAsync();
+            ModelStatusChanged?.Invoke(this, key);
+        }
+
+        public async Task<ModelTestResult> RefreshModelsForProviderAsync(string providerId)
+        {
+            string key = CredentialVaultService.Instance.GetApiKey(providerId);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return new ModelTestResult
+                {
+                    Success = false,
+                    StatusCode = 401,
+                    Message = "No API key configured for this provider in Key Vault."
+                };
+            }
+
+            var result = await TestAndFetchModelsForProviderAsync(providerId, key);
+            if (result.Success)
+            {
+                ModelStatusChanged?.Invoke(this, AiProviderRegistry.NormalizeProviderId(providerId));
+            }
+            return result;
         }
 
         #endregion
@@ -278,6 +328,22 @@ namespace WinAI.Services
                         apiKey: cleanKey,
                         providerKey: "xai",
                         providerName: "xAI"
+                    );
+                }
+                else if (pid.Contains("custom"))
+                {
+                    string baseUrl = ApiKeyService.Instance.CustomBaseUrl;
+                    if (string.IsNullOrWhiteSpace(baseUrl)) baseUrl = "http://localhost:11434/v1/models";
+                    else if (!baseUrl.EndsWith("/models", StringComparison.OrdinalIgnoreCase))
+                    {
+                        baseUrl = baseUrl.TrimEnd('/') + "/models";
+                    }
+
+                    return await TestAndFetchOpenAiCompatibleAsync(
+                        endpoint: baseUrl,
+                        apiKey: cleanKey,
+                        providerKey: "custom",
+                        providerName: "Custom Provider"
                     );
                 }
                 else
@@ -363,12 +429,6 @@ namespace WinAI.Services
                     }
                 }
 
-                if (list.Count == 0)
-                {
-                    list.Add(new AiModelItem { Id = "gemini-1.5-flash", DisplayName = "Gemini 1.5 Flash", ProviderName = "Google Gemini" });
-                    list.Add(new AiModelItem { Id = "gemini-2.0-flash", DisplayName = "Gemini 2.0 Flash", ProviderName = "Google Gemini" });
-                    list.Add(new AiModelItem { Id = "gemini-1.5-pro", DisplayName = "Gemini 1.5 Pro", ProviderName = "Google Gemini" });
-                }
 
                 // Sort: put Flash models first (best quotas for free users), then Pro
                 list = list.OrderByDescending(m => m.Id.Contains("flash"))
@@ -444,12 +504,6 @@ namespace WinAI.Services
                         }
                     }
 
-                    if (list.Count == 0)
-                    {
-                        list.Add(new AiModelItem { Id = "gpt-4o", DisplayName = "GPT-4o", ProviderName = "OpenAI" });
-                        list.Add(new AiModelItem { Id = "gpt-4o-mini", DisplayName = "GPT-4o Mini", ProviderName = "OpenAI" });
-                        list.Add(new AiModelItem { Id = "o1-mini", DisplayName = "o1 Mini", ProviderName = "OpenAI" });
-                    }
 
                     list = list.OrderBy(m => m.DisplayName).ToList();
 
@@ -630,15 +684,60 @@ namespace WinAI.Services
                     var data = obj["data"] as JArray;
                     if (data != null)
                     {
-                        foreach (var item in data.Take(25))
+                        var rawItems = new List<AiModelItem>();
+                        foreach (var item in data)
                         {
                             string id = item["id"]?.ToString();
                             string name = item["name"]?.ToString() ?? id;
                             if (!string.IsNullOrEmpty(id))
                             {
-                                list.Add(new AiModelItem { Id = id, DisplayName = name, ProviderName = "OpenRouter" });
+                                var caps = ModelCapabilities.Text;
+                                var arch = item["architecture"];
+                                if (arch != null)
+                                {
+                                    var inMods = arch["input_modalities"] as JArray;
+                                    if (inMods != null && inMods.Any(m => m.ToString().Equals("image", StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        caps |= ModelCapabilities.Vision;
+                                    }
+                                    string mod = arch["modality"]?.ToString() ?? "";
+                                    if (mod.IndexOf("image", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        caps |= ModelCapabilities.Vision;
+                                    }
+                                }
+
+                                if (id.IndexOf("vision", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("-vl-", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("vl:", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("omni", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    caps |= ModelCapabilities.Vision;
+                                }
+
+                                if (id.IndexOf("r1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("reason", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("o1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    id.IndexOf("o3", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    caps |= ModelCapabilities.Reasoning;
+                                }
+
+                                rawItems.Add(new AiModelItem
+                                {
+                                    Id = id,
+                                    DisplayName = name,
+                                    ProviderName = "OpenRouter",
+                                    Capabilities = caps
+                                });
                             }
                         }
+
+                        // Prioritize free models (:free) at the top so the user can immediately use them without cost!
+                        list = rawItems.OrderByDescending(m => m.Id.EndsWith(":free") || m.DisplayName.ToLowerInvariant().Contains("free"))
+                                       .ThenBy(m => m.DisplayName)
+                                       .Take(60)
+                                       .ToList();
                     }
 
                     lock (_providerModelsCache) { _providerModelsCache["openrouter"] = list; }
@@ -716,28 +815,28 @@ namespace WinAI.Services
             var models = new List<AiModelItem>();
 
             // Aggregate from local cache for all configured providers
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.OpenAiKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.OpenAiKey) || CredentialVaultService.Instance.HasApiKey("openai"))
                 models.AddRange(GetModelsForProvider("openai"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.GeminiKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.GeminiKey) || CredentialVaultService.Instance.HasApiKey("gemini"))
                 models.AddRange(GetModelsForProvider("gemini"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.ClaudeKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.ClaudeKey) || CredentialVaultService.Instance.HasApiKey("claude"))
                 models.AddRange(GetModelsForProvider("claude"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.DeepSeekKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.DeepSeekKey) || CredentialVaultService.Instance.HasApiKey("deepseek"))
                 models.AddRange(GetModelsForProvider("deepseek"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.PerplexityKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.PerplexityKey) || CredentialVaultService.Instance.HasApiKey("perplexity"))
                 models.AddRange(GetModelsForProvider("perplexity"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.GroqKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.GroqKey) || CredentialVaultService.Instance.HasApiKey("groq"))
                 models.AddRange(GetModelsForProvider("groq"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.OpenRouterKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.OpenRouterKey) || CredentialVaultService.Instance.HasApiKey("openrouter"))
                 models.AddRange(GetModelsForProvider("openrouter"));
 
-            if (!string.IsNullOrWhiteSpace(_apiKeyService.XAiKey))
+            if (!string.IsNullOrWhiteSpace(_apiKeyService.XAiKey) || CredentialVaultService.Instance.HasApiKey("xai"))
                 models.AddRange(GetModelsForProvider("xai"));
 
             if (models.Count == 0)

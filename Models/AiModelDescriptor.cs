@@ -16,6 +16,8 @@ namespace WinAI.Models
         public bool RequiresApiKey { get; set; } = true;
         public bool IsConfigured { get; set; }
         public string Description { get; set; }
+        public bool IsAvailable { get; set; } = true;
+        public string Status { get; set; } = "Available";
 
         public bool SupportsVision => Capabilities.HasFlag(ModelCapabilities.Vision);
         public bool SupportsReasoning => Capabilities.HasFlag(ModelCapabilities.Reasoning);
@@ -47,7 +49,10 @@ namespace WinAI.Models
 
         public AiModelItem ToModelItem()
         {
-            return new AiModelItem(Id, DisplayName, ProviderName, Description ?? Id);
+            var item = new AiModelItem(Id, DisplayName, ProviderName, Description ?? Id);
+            item.IsAvailable = IsAvailable;
+            item.Status = Status;
+            return item;
         }
 
         public static AiModelDescriptor FromModelItem(AiModelItem item, string providerId, bool isConfigured = false, ModelCapabilities capabilities = ModelCapabilities.Text)
@@ -61,7 +66,11 @@ namespace WinAI.Models
                 capabilities: capabilities,
                 isConfigured: isConfigured,
                 description: item.Description
-            );
+            )
+            {
+                IsAvailable = item.IsAvailable,
+                Status = item.Status
+            };
         }
 
         public override string ToString() => FullDisplay;

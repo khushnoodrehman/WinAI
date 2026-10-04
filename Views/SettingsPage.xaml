@@ -25,7 +25,12 @@
                         <StackPanel Padding="0,32,0,32">
                             <!-- Drawer Header -->
                             <StackPanel Margin="24,0,16,28">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
+                                    <Image Source="ms-appx:///Assets/AppLogo.png"
+                                           Width="28"
+                                           Height="28"
+                                           Margin="0,0,10,0"
+                                           VerticalAlignment="Center" />
                                     <TextBlock Text="Win"
                                                FontSize="28"
                                                FontWeight="SemiBold"
@@ -301,6 +306,11 @@
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center"
                                     Margin="8,0,0,0">
+                            <Image Source="ms-appx:///Assets/AppLogo.png"
+                                   Width="22"
+                                   Height="22"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center" />
                             <TextBlock Text="Win"
                                        FontSize="21"
                                        FontWeight="SemiBold"
@@ -348,149 +358,202 @@
                                     CornerRadius="8">
                                 <StackPanel>
                                     <!-- Row 1: Theme -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="ThemeRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="ThemeRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Theme Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE790;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Theme"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Light or Dark"
-                                                       FontSize="12"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Current Value & Chevron -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="ThemeValueText"
-                                                       Text="Dark"
-                                                       FontSize="13"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Text="&#xE76C;"
+                                            <!-- Theme Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE790;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Grid>
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Theme"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Light or Dark"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="ThemeValueText"
+                                                           Text="Dark"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 2: Font Size -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="FontSizeRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="FontSizeRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Font Size Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="AA"
-                                                   FontFamily="Segoe UI"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="15"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Font Size"
+                                            <!-- Font Size Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="AA"
+                                                       FontFamily="Segoe UI"
+                                                       FontWeight="SemiBold"
                                                        FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Small, Medium, Large"
-                                                       FontSize="12"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
 
-                                        <!-- Current Value & Chevron -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="FontSizeValueText"
-                                                       Text="Medium"
-                                                       FontSize="13"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Text="&#xE76C;"
-                                                       FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Grid>
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Font Size"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Small, Default, Large"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="FontSizeValueText"
+                                                           Text="Default"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 3: Language -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="LanguageRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="LanguageRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Globe Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE774;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Language"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="App language"
-                                                       FontSize="12"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Current Value & Chevron -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="LanguageValueText"
-                                                       Text="English"
-                                                       FontSize="13"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Text="&#xE76C;"
+                                            <!-- Globe Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE774;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Grid>
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Language"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="App language"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="LanguageValueText"
+                                                           Text="English"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Divider -->
+                                    <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
+
+                                    <!-- Row 4: Start Screen Tile Style -->
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="TileStyleRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Tile Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE736;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Live Tile Style"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Transparent or Colorful Start tile"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TileStyleValueText"
+                                                           Text="Transparent"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
                                 </StackPanel>
                             </Border>
 
@@ -509,185 +572,189 @@
                                     CornerRadius="8">
                                 <StackPanel>
                                     <!-- Row 1: Default Provider -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="DefaultProviderRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="DefaultProviderRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Provider Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE713;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Default Provider"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Choose your preferred AI provider"
-                                                       FontSize="12"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Current Value & Chevron -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="DefaultProviderValueText"
-                                                       Text="OpenAI"
-                                                       FontSize="13"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Text="&#xE76C;"
+                                            <!-- Provider Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE713;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Grid>
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Default Provider"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Choose your preferred AI provider"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="DefaultProviderValueText"
+                                                           Text="OpenAI"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 2: Default Model -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="DefaultModelRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="DefaultModelRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Sliders Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE9E9;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Default Model"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Model to use for new chats"
-                                                       FontSize="12"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Current Value & Chevron -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="DefaultModelValueText"
-                                                       Text="GPT-4o"
-                                                       FontSize="13"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Text="&#xE76C;"
+                                            <!-- Sliders Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE9E9;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource AppTextSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Grid>
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Default Model"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Model to use for new chats"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Current Value & Chevron -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="DefaultModelValueText"
+                                                           Text="GPT-4o"
+                                                           FontSize="13"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,0,8,0" />
+                                                <TextBlock Text="&#xE76C;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 3: Chat History -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="ChatHistoryRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="ChatHistoryRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Clock Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE81C;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                            <!-- Clock Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE81C;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
 
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Chat History"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Manage your conversations"
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Chat History"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Manage your conversations"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Chevron -->
+                                            <TextBlock Grid.Column="2"
+                                                       Text="&#xE76C;"
+                                                       FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
-                                                       FontFamily="Segoe UI"
                                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Chevron -->
-                                        <TextBlock Grid.Column="2"
-                                                   Text="&#xE76C;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="12"
-                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 4: Clear All Conversations -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="ClearConversationsRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="ClearConversationsRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Trash Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE74D;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                            <!-- Trash Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE74D;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
 
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Clear All Conversations"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Delete all chat history"
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Clear All Conversations"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Delete all chat history"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Chevron -->
+                                            <TextBlock Grid.Column="2"
+                                                       Text="&#xE76C;"
+                                                       FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
-                                                       FontFamily="Segoe UI"
                                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Chevron -->
-                                        <TextBlock Grid.Column="2"
-                                                   Text="&#xE76C;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="12"
-                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
                                 </StackPanel>
                             </Border>
 
@@ -706,87 +773,89 @@
                                     CornerRadius="8">
                                 <StackPanel>
                                     <!-- Row 1: Key Vault -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="KeyVaultRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="KeyVaultRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Lock Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xE72E;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                            <!-- Lock Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xE72E;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
 
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Key Vault"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Manage your API keys"
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Key Vault"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Manage your API keys"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Chevron -->
+                                            <TextBlock Grid.Column="2"
+                                                       Text="&#xE76C;"
+                                                       FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
-                                                       FontFamily="Segoe UI"
                                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Chevron -->
-                                        <TextBlock Grid.Column="2"
-                                                   Text="&#xE76C;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="12"
-                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
 
                                     <!-- Divider -->
                                     <Border Height="1" Background="{ThemeResource AppDividerBrush}" Margin="54,0,0,0" />
 
                                     <!-- Row 2: Privacy Center -->
-                                    <Grid Background="Transparent"
-                                          Padding="16,13,16,13"
-                                          Tapped="PrivacyCenterRow_Tapped">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                    <Button Style="{StaticResource WinAIRowButtonStyle}"
+                                            Click="PrivacyCenterRow_Tapped">
+                                        <Grid Padding="16,13,16,13">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Shield Icon -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="&#xEA18;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="{ThemeResource AppTextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                            <!-- Shield Icon -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="&#xEA18;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{ThemeResource AppTextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
 
-                                        <!-- Titles -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
-                                            <TextBlock Text="Privacy Center"
-                                                       FontSize="15"
-                                                       FontFamily="Segoe UI"
-                                                       Foreground="{ThemeResource AppTextPrimaryBrush}" />
-                                            <TextBlock Text="Data and privacy settings"
+                                            <!-- Titles -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="2,0,8,0">
+                                                <TextBlock Text="Privacy Center"
+                                                           FontSize="15"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextPrimaryBrush}" />
+                                                <TextBlock Text="Data and privacy settings"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI"
+                                                           Foreground="{ThemeResource AppTextSecondaryBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Chevron -->
+                                            <TextBlock Grid.Column="2"
+                                                       Text="&#xE76C;"
+                                                       FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
-                                                       FontFamily="Segoe UI"
                                                        Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                       Margin="0,1,0,0" />
-                                        </StackPanel>
-
-                                        <!-- Chevron -->
-                                        <TextBlock Grid.Column="2"
-                                                   Text="&#xE76C;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="12"
-                                                   Foreground="{ThemeResource AppTextSecondaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
                                 </StackPanel>
                             </Border>
 
