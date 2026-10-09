@@ -94,30 +94,9 @@ namespace WinAI.Services.Providers
                 }
             }
 
-            var fallbackModels = new List<string> { cleanModel };
-            if (hasImage)
-            {
-                // Include multimodal fallbacks in the OpenRouter models array
-                string[] visionFallbacks = new[]
-                {
-                    "google/gemini-2.0-flash-exp:free",
-                    "google/gemini-flash-1.5:free",
-                    "meta-llama/llama-3.2-11b-vision-instruct:free",
-                    "qwen/qwen-2-vl-72b-instruct:free",
-                    "openrouter/free",
-                    "openrouter/auto"
-                };
-
-                foreach (var vf in visionFallbacks)
-                {
-                    if (!fallbackModels.Contains(vf)) fallbackModels.Add(vf);
-                }
-            }
-
             var requestBody = new
             {
                 model = cleanModel,
-                models = fallbackModels,
                 messages = messagesPayload
             };
 
@@ -136,7 +115,10 @@ namespace WinAI.Services.Providers
                     if (!response.IsSuccessStatusCode)
                     {
                         // Seamless Vision Fallback: If chosen model cannot handle images, route to free vision model
-                        if (hasImage && responseString.IndexOf("support image input", StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (hasImage && (responseString.IndexOf("support image", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         responseString.IndexOf("image input", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         responseString.IndexOf("multimodal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         responseString.IndexOf("does not support", StringComparison.OrdinalIgnoreCase) >= 0))
                         {
                             return await SendVisionFallbackAsync(apiKey, messagesPayload);
                         }

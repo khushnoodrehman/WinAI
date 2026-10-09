@@ -118,10 +118,11 @@
 
                 <!-- Three-Dot Overflow Menu Button -->
                 <Button x:Name="MoreButton"
-                        Width="28"
-                        Height="28"
+                        Width="36"
+                        Height="36"
                         Background="Transparent"
                         Padding="0"
+                        Tapped="MoreButton_Tapped"
                         Click="MoreButton_Click">
                     <TextBlock Text="&#xE712;"
                                FontFamily="Segoe MDL2 Assets"

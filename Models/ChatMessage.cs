@@ -107,8 +107,103 @@ namespace WinAI.Models
             }
         }
 
+        private string _attachmentId;
+        private string _localFileName;
+        private string _thumbnailFileName;
+        private string _originalFileName;
+        private int _imageWidth;
+        private int _imageHeight;
+        private long _fileSizeBytes;
+
+        public string AttachmentId
+        {
+            get => _attachmentId;
+            set { _attachmentId = value; OnPropertyChanged(); }
+        }
+
+        public string LocalFileName
+        {
+            get => _localFileName;
+            set
+            {
+                if (_localFileName != value)
+                {
+                    _localFileName = value;
+                    _imageSource = null;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(HasImage));
+                    OnPropertyChanged(nameof(ImageVisibility));
+                    OnPropertyChanged(nameof(ImageSource));
+                }
+            }
+        }
+
+        public string ThumbnailFileName
+        {
+            get => _thumbnailFileName;
+            set
+            {
+                if (_thumbnailFileName != value)
+                {
+                    _thumbnailFileName = value;
+                    _imageSource = null;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ImageSource));
+                }
+            }
+        }
+
+        public string OriginalFileName
+        {
+            get => _originalFileName;
+            set { _originalFileName = value; OnPropertyChanged(); }
+        }
+
+        public int ImageWidth
+        {
+            get => _imageWidth;
+            set { _imageWidth = value; OnPropertyChanged(); }
+        }
+
+        public int ImageHeight
+        {
+            get => _imageHeight;
+            set { _imageHeight = value; OnPropertyChanged(); }
+        }
+
+        public long FileSizeBytes
+        {
+            get => _fileSizeBytes;
+            set { _fileSizeBytes = value; OnPropertyChanged(); }
+        }
+
+        private bool _isImageLoading;
+        private bool _isImageFailed;
+
         [JsonIgnore]
-        public bool HasImage => !string.IsNullOrEmpty(_imageBase64);
+        public bool IsImageLoading
+        {
+            get => _isImageLoading;
+            set { _isImageLoading = value; OnPropertyChanged(); }
+        }
+
+        [JsonIgnore]
+        public bool IsImageFailed
+        {
+            get => _isImageFailed;
+            set { _isImageFailed = value; OnPropertyChanged(); }
+        }
+
+        [JsonIgnore]
+        public bool HasText => !string.IsNullOrWhiteSpace(_text);
+
+        [JsonIgnore]
+        public Windows.UI.Xaml.Visibility TextVisibility => HasText
+            ? Windows.UI.Xaml.Visibility.Visible
+            : Windows.UI.Xaml.Visibility.Collapsed;
+
+        [JsonIgnore]
+        public bool HasImage => !string.IsNullOrEmpty(_imageBase64) || !string.IsNullOrEmpty(_localFileName);
 
         [JsonIgnore]
         public Windows.UI.Xaml.Visibility ImageVisibility => HasImage
@@ -120,7 +215,7 @@ namespace WinAI.Models
         {
             get
             {
-                if (_imageSource == null && !string.IsNullOrEmpty(_imageBase64))
+                if (_imageSource == null && HasImage && !_isImageFailed)
                 {
                     LoadImageSourceAsync();
                 }
@@ -130,25 +225,69 @@ namespace WinAI.Models
 
         private async void LoadImageSourceAsync()
         {
+            if (_isImageLoading) return;
+            IsImageLoading = true;
+            IsImageFailed = false;
+
             try
             {
-                byte[] bytes = Convert.FromBase64String(_imageBase64);
-                using (var stream = new InMemoryRandomAccessStream())
+                // Prioritize fast, memory-efficient local thumbnail/image
+                if (!string.IsNullOrEmpty(_thumbnailFileName) || !string.IsNullOrEmpty(_localFileName))
                 {
-                    using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+                    var file = await WinAI.Services.ImageStorageService.Instance.GetThumbnailFileAsync(
+                        !string.IsNullOrEmpty(_thumbnailFileName) ? _thumbnailFileName : _localFileName);
+
+                    if (file == null && !string.IsNullOrEmpty(_localFileName))
                     {
-                        writer.WriteBytes(bytes);
-                        await writer.StoreAsync();
+                        file = await WinAI.Services.ImageStorageService.Instance.GetImageFileAsync(_localFileName);
                     }
-                    var bmp = new BitmapImage();
-                    await bmp.SetSourceAsync(stream);
-                    _imageSource = bmp;
-                    OnPropertyChanged(nameof(ImageSource));
+
+                    if (file != null)
+                    {
+                        using (var stream = await file.OpenReadAsync())
+                        {
+                            var bmp = new BitmapImage();
+                            bmp.DecodePixelWidth = 320;
+                            await bmp.SetSourceAsync(stream);
+                            _imageSource = bmp;
+                            IsImageLoading = false;
+                            IsImageFailed = false;
+                            OnPropertyChanged(nameof(ImageSource));
+                            return;
+                        }
+                    }
                 }
+
+                // Fallback to Base64 in memory
+                if (!string.IsNullOrEmpty(_imageBase64))
+                {
+                    byte[] bytes = Convert.FromBase64String(_imageBase64);
+                    using (var stream = new InMemoryRandomAccessStream())
+                    {
+                        using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+                        {
+                            writer.WriteBytes(bytes);
+                            await writer.StoreAsync();
+                        }
+                        var bmp = new BitmapImage();
+                        bmp.DecodePixelWidth = 320;
+                        await bmp.SetSourceAsync(stream);
+                        _imageSource = bmp;
+                        IsImageLoading = false;
+                        IsImageFailed = false;
+                        OnPropertyChanged(nameof(ImageSource));
+                        return;
+                    }
+                }
+
+                // If file not found and no base64, mark as failed
+                IsImageLoading = false;
+                IsImageFailed = true;
             }
             catch
             {
-                // Silently handle invalid image bytes
+                IsImageLoading = false;
+                IsImageFailed = true;
             }
         }
 

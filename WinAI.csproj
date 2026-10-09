@@ -176,6 +176,7 @@
     <Compile Include="Services\AiChatService.cs" />
     <Compile Include="Services\ThemeService.cs" />
     <Compile Include="Services\AppSettingsService.cs" />
+    <Compile Include="Services\ImageStorageService.cs" />
     <Compile Include="Models\ChatMessage.cs" />
     <Compile Include="Models\ChatSession.cs" />
     <Compile Include="Models\AiModelItem.cs" />
@@ -203,9 +204,13 @@
     <Compile Include="Views\ProviderDetailPage.xaml.cs">
       <DependentUpon>ProviderDetailPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\ImagesGalleryPage.xaml.cs">
+      <DependentUpon>ImagesGalleryPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Data\Models\MessageRole.cs" />
     <Compile Include="Data\Models\ConversationEntity.cs" />
     <Compile Include="Data\Models\MessageEntity.cs" />
+    <Compile Include="Data\Models\AttachmentEntity.cs" />
     <Compile Include="Data\Database\WinAIDatabase.cs" />
     <Compile Include="Data\Database\DatabaseMigrations.cs" />
     <Compile Include="Data\Database\DatabaseInitializer.cs" />
@@ -213,6 +218,8 @@
     <Compile Include="Data\Repositories\ConversationRepository.cs" />
     <Compile Include="Data\Repositories\IMessageRepository.cs" />
     <Compile Include="Data\Repositories\MessageRepository.cs" />
+    <Compile Include="Data\Repositories\IAttachmentRepository.cs" />
+    <Compile Include="Data\Repositories\AttachmentRepository.cs" />
     <Compile Include="Data\Services\ConversationService.cs" />
     <Compile Include="Data\Services\IConversationContextBuilder.cs" />
     <Compile Include="Data\Services\ConversationContextBuilder.cs" />
@@ -335,6 +342,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\ConversationsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ImagesGalleryPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

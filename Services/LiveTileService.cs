@@ -61,10 +61,10 @@ namespace WinAI.Services
                 {
                     string xml = @"<tile>
                       <visual>
-                        <binding template=""TileMedium"">
+                        <binding template=""TileMedium"" branding=""name"">
                           <image src=""ms-appx:///Assets/TileColorfulSquare.png"" placement=""background""/>
                         </binding>
-                        <binding template=""TileWide"">
+                        <binding template=""TileWide"" branding=""name"">
                           <image src=""ms-appx:///Assets/TileColorfulWide.png"" placement=""background""/>
                         </binding>
                       </visual>

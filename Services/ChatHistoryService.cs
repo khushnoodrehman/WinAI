@@ -64,14 +64,42 @@ namespace WinAI.Services
 
             // Populate messages for this session
             var msgEntities = await _conversationService.GetMessagesAsync(sessionId).ConfigureAwait(false);
-            session.Messages = msgEntities.Select(m => new ChatMessage(
-                text: m.Content,
-                isUser: m.Role == MessageRole.User,
-                senderName: m.Role == MessageRole.User ? "You" : (string.IsNullOrWhiteSpace(m.ModelId) ? "Assistant" : m.ModelId)
-            )
+            var convAttachments = await _conversationService.GetAttachmentsForConversationAsync(sessionId).ConfigureAwait(false);
+            var attLookup = new Dictionary<string, AttachmentEntity>();
+            if (convAttachments != null)
             {
-                Id = m.Id,
-                Timestamp = m.LocalCreatedAt
+                foreach (var a in convAttachments)
+                {
+                    if (!string.IsNullOrEmpty(a.MessageId) && !attLookup.ContainsKey(a.MessageId))
+                    {
+                        attLookup[a.MessageId] = a;
+                    }
+                }
+            }
+
+            session.Messages = msgEntities.Select(m => {
+                var chatMsg = new ChatMessage(
+                    text: m.Content,
+                    isUser: m.Role == MessageRole.User,
+                    senderName: m.Role == MessageRole.User ? "You" : (string.IsNullOrWhiteSpace(m.ModelId) ? "Assistant" : m.ModelId)
+                )
+                {
+                    Id = m.Id,
+                    Timestamp = m.LocalCreatedAt
+                };
+
+                if (attLookup.TryGetValue(m.Id, out var att) && att != null)
+                {
+                    chatMsg.AttachmentId = att.Id;
+                    chatMsg.LocalFileName = att.LocalFileName;
+                    chatMsg.ThumbnailFileName = att.ThumbnailFileName;
+                    chatMsg.OriginalFileName = att.OriginalFileName;
+                    chatMsg.ImageWidth = att.ImageWidth;
+                    chatMsg.ImageHeight = att.ImageHeight;
+                    chatMsg.FileSizeBytes = att.FileSizeBytes;
+                }
+
+                return chatMsg;
             }).ToList();
 
             return session;

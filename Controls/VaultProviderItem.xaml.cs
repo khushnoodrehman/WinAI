@@ -95,7 +95,6 @@ namespace WinAI.Controls
                 StatusText.Foreground = successBrush;
 
                 MoreButton.Visibility = Visibility.Visible;
-                if (AddKeyRowContainer != null) AddKeyRowContainer.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -109,7 +108,6 @@ namespace WinAI.Controls
                 StatusText.Foreground = secondaryBrush;
 
                 MoreButton.Visibility = Visibility.Collapsed;
-                if (AddKeyRowContainer != null) AddKeyRowContainer.Visibility = Visibility.Visible;
             }
         }
 
@@ -130,9 +128,9 @@ namespace WinAI.Controls
             EditRequested?.Invoke(this, this);
         }
 
-        private void AddKeyRowButton_Click(object sender, RoutedEventArgs e)
+        private void MoreButton_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            EditRequested?.Invoke(this, this);
+            e.Handled = true;
         }
 
         private void MenuCopy_Click(object sender, RoutedEventArgs e)

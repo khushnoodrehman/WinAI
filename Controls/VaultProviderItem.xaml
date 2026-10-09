@@ -105,30 +105,13 @@
                         Orientation="Horizontal"
                         VerticalAlignment="Center">
 
-                <!-- Subtle '+ Add' pill button for unconfigured providers -->
-                <Border x:Name="AddKeyRowContainer"
-                        Visibility="Collapsed"
-                        Background="Transparent"
-                        BorderBrush="{ThemeResource AppSurfaceBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <Button x:Name="AddKeyRowButton"
-                            Background="Transparent"
-                            Padding="8,4"
-                            Click="AddKeyRowButton_Click">
-                        <TextBlock Text="+ Add"
-                                   FontSize="12"
-                                   FontFamily="Segoe UI"
-                                   Foreground="{ThemeResource AppAccentBrush}" />
-                    </Button>
-                </Border>
-
                 <!-- Three-Dot Overflow Menu for Configured Provider Rows (Phase 3 Requirement 2) -->
                 <Button x:Name="MoreButton"
                         Width="36"
                         Height="36"
                         Background="Transparent"
                         Padding="0"
+                        Tapped="MoreButton_Tapped"
                         ToolTipService.ToolTip="Key options">
                     <TextBlock Text="&#xE712;"
                                FontFamily="Segoe MDL2 Assets"

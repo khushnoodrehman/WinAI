@@ -23,6 +23,7 @@ namespace WinAI.Data.Services
         private readonly WinAIDatabase _db;
         private readonly IConversationRepository _conversationRepo;
         private readonly IMessageRepository _messageRepo;
+        private readonly IAttachmentRepository _attachmentRepo;
 
         public event EventHandler<string> ConversationChanged;
         public event EventHandler ConversationsListChanged;
@@ -30,11 +31,13 @@ namespace WinAI.Data.Services
         public ConversationService(
             WinAIDatabase database = null,
             IConversationRepository conversationRepo = null,
-            IMessageRepository messageRepo = null)
+            IMessageRepository messageRepo = null,
+            IAttachmentRepository attachmentRepo = null)
         {
             _db = database ?? DatabaseInitializer.Database;
             _conversationRepo = conversationRepo ?? new ConversationRepository(_db);
             _messageRepo = messageRepo ?? new MessageRepository(_db);
+            _attachmentRepo = attachmentRepo ?? new AttachmentRepository(_db);
         }
 
         #region Conversation Operations
@@ -194,22 +197,136 @@ namespace WinAI.Data.Services
 
         public async Task<bool> DeleteConversationAsync(string conversationId)
         {
+            if (string.IsNullOrWhiteSpace(conversationId)) return false;
+
+            // 1. Fetch attachments to safely clean up physical media files
+            List<AttachmentEntity> attachments = null;
+            try
+            {
+                attachments = await _attachmentRepo.GetByConversationIdAsync(conversationId).ConfigureAwait(false);
+            }
+            catch { }
+
+            // 2. Delete database records (attachments cascade or delete explicitly)
+            try
+            {
+                await _attachmentRepo.DeleteByConversationIdAsync(conversationId).ConfigureAwait(false);
+            }
+            catch { }
+
             bool ok = await _conversationRepo.DeleteAsync(conversationId).ConfigureAwait(false);
             if (ok)
             {
                 ConversationsListChanged?.Invoke(this, EventArgs.Empty);
             }
+
+            // 3. Clean up physical media files on disk without holding database locks
+            if (attachments != null && attachments.Count > 0)
+            {
+                foreach (var att in attachments)
+                {
+                    try
+                    {
+                        await WinAI.Services.ImageStorageService.Instance.DeleteAttachmentFilesAsync(
+                            att.LocalFileName, att.ThumbnailFileName).ConfigureAwait(false);
+                    }
+                    catch { }
+                }
+            }
+
             return ok;
         }
 
         public async Task<bool> ClearAllConversationsAsync()
         {
+            // 1. Fetch all attachments to safely clean up physical files
+            List<AttachmentEntity> attachments = null;
+            try
+            {
+                attachments = await _attachmentRepo.GetAllAsync(limit: 0, offset: 0).ConfigureAwait(false);
+            }
+            catch { }
+
+            try
+            {
+                var allFileNames = await _attachmentRepo.GetAllLocalFileNamesAsync().ConfigureAwait(false);
+            }
+            catch { }
+
             bool ok = await _conversationRepo.ClearAllAsync().ConfigureAwait(false);
             if (ok)
             {
                 ConversationsListChanged?.Invoke(this, EventArgs.Empty);
             }
+
+            // 2. Clean up media files
+            if (attachments != null)
+            {
+                foreach (var att in attachments)
+                {
+                    try
+                    {
+                        await WinAI.Services.ImageStorageService.Instance.DeleteAttachmentFilesAsync(
+                            att.LocalFileName, att.ThumbnailFileName).ConfigureAwait(false);
+                    }
+                    catch { }
+                }
+            }
+
             return ok;
+        }
+
+        #endregion
+
+        #region Attachment Operations
+
+        public async Task<List<AttachmentEntity>> GetAttachmentsForMessageAsync(string messageId)
+        {
+            if (string.IsNullOrWhiteSpace(messageId)) return new List<AttachmentEntity>();
+            return await _attachmentRepo.GetByMessageIdAsync(messageId).ConfigureAwait(false);
+        }
+
+        public async Task<List<AttachmentEntity>> GetAttachmentsForConversationAsync(string conversationId)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId)) return new List<AttachmentEntity>();
+            return await _attachmentRepo.GetByConversationIdAsync(conversationId).ConfigureAwait(false);
+        }
+
+        public async Task<List<AttachmentEntity>> GetAllAttachmentsAsync(int limit = 100, int offset = 0)
+        {
+            return await _attachmentRepo.GetAllAsync(limit, offset).ConfigureAwait(false);
+        }
+
+        public async Task<int> GetAttachmentCountAsync()
+        {
+            return await _attachmentRepo.GetCountAsync().ConfigureAwait(false);
+        }
+
+        public async Task<bool> DeleteAttachmentAsync(string attachmentId)
+        {
+            if (string.IsNullOrWhiteSpace(attachmentId)) return false;
+
+            var entity = await _attachmentRepo.GetByIdAsync(attachmentId).ConfigureAwait(false);
+            if (entity == null) return false;
+
+            bool ok = await _attachmentRepo.DeleteAsync(attachmentId).ConfigureAwait(false);
+            if (ok)
+            {
+                await WinAI.Services.ImageStorageService.Instance.DeleteAttachmentFilesAsync(
+                    entity.LocalFileName, entity.ThumbnailFileName).ConfigureAwait(false);
+            }
+            return ok;
+        }
+
+        public async Task CleanupOrphanedMediaFilesAsync()
+        {
+            try
+            {
+                var names = await _attachmentRepo.GetAllLocalFileNamesAsync().ConfigureAwait(false);
+                var set = new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
+                await WinAI.Services.ImageStorageService.Instance.CleanupOrphanedFilesAsync(set).ConfigureAwait(false);
+            }
+            catch { }
         }
 
         #endregion
@@ -220,7 +337,8 @@ namespace WinAI.Data.Services
             string conversationId,
             string content,
             string providerId = null,
-            string modelId = null)
+            string modelId = null,
+            List<AttachmentEntity> attachments = null)
         {
             return await AddMessageInternalAsync(
                 conversationId,
@@ -229,7 +347,8 @@ namespace WinAI.Data.Services
                 providerId,
                 modelId,
                 isError: false,
-                tokenCount: 0
+                tokenCount: 0,
+                attachments: attachments
             ).ConfigureAwait(false);
         }
 
@@ -248,7 +367,8 @@ namespace WinAI.Data.Services
                 providerId,
                 modelId,
                 isError,
-                tokenCount
+                tokenCount,
+                attachments: null
             ).ConfigureAwait(false);
         }
 
@@ -259,7 +379,8 @@ namespace WinAI.Data.Services
             string providerId,
             string modelId,
             bool isError,
-            int tokenCount)
+            int tokenCount,
+            List<AttachmentEntity> attachments = null)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
                 throw new ArgumentException("Conversation ID cannot be empty.", nameof(conversationId));
@@ -301,6 +422,17 @@ namespace WinAI.Data.Services
                 };
 
                 await _messageRepo.AddAsync(createdMessage).ConfigureAwait(false);
+
+                // Insert attachment metadata transactionally
+                if (attachments != null && attachments.Count > 0)
+                {
+                    foreach (var att in attachments)
+                    {
+                        att.MessageId = createdMessage.Id;
+                        att.ConversationId = conversationId;
+                        await _attachmentRepo.AddAsync(att).ConfigureAwait(false);
+                    }
+                }
 
                 // Update conversation metadata transactionally
                 conv.UpdatedAtUtc = DateTime.UtcNow;

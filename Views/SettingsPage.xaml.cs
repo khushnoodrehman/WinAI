@@ -545,6 +545,18 @@ namespace WinAI.Views
             Frame.Navigate(typeof(PrivacyCenterPage));
         }
 
+        private async void TelegramContactRow_Tapped(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("https://t.me/Seven_kk7"));
+            }
+            catch (Exception)
+            {
+                ShowNotification("Telegram: @Seven_kk7");
+            }
+        }
+
         #endregion
 
         #region Navigation & Notifications
@@ -567,6 +579,7 @@ namespace WinAI.Views
         private void DrawerHome_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(HomePage));
         private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage), "new");
         private void DrawerConversations_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ConversationsPage));
+        private void DrawerYourImages_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ImagesGalleryPage));
         private void DrawerProviders_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(AiProvidersPage));
         private void DrawerVault_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(KeyVaultPage));
         private void DrawerPromptKit_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(PromptKitPage));

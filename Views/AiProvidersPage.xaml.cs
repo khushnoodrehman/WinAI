@@ -260,6 +260,7 @@ namespace WinAI.Views
         private void DrawerHome_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(HomePage));
         private void DrawerNewChat_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(MainPage), "new");
         private void DrawerConversations_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ConversationsPage));
+        private void DrawerYourImages_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(ImagesGalleryPage));
         private void DrawerProviders_Click(object sender, RoutedEventArgs e) => NavDrawer.IsPaneOpen = false;
         private void DrawerVault_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(KeyVaultPage));
         private void DrawerPromptKit_Click(object sender, RoutedEventArgs e) => Frame.Navigate(typeof(PromptKitPage));

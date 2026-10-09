@@ -80,6 +80,11 @@ namespace WinAI.Controls
             }
         }
 
+        private void MoreButton_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+        }
+
         private void MoreButton_Click(object sender, RoutedEventArgs e)
         {
             // Handled by MenuFlyout

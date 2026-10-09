@@ -376,11 +376,29 @@ namespace WinAI.Views
 
         private void UpdateFilterPillStyles()
         {
-            var accentBrush = (Brush)Application.Current.Resources["AppAccentBrush"];
-            var surfaceBrush = (Brush)Application.Current.Resources["AppSurfaceBrush"];
-            var borderBrush = (Brush)Application.Current.Resources["AppSurfaceBorderBrush"];
-            var textSecBrush = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
-            var whiteBrush = new SolidColorBrush(Colors.White);
+            bool isDark = this.ActualTheme == ElementTheme.Dark ||
+                          (this.ActualTheme == ElementTheme.Default && Application.Current.RequestedTheme == ApplicationTheme.Dark);
+
+            var themeKey = isDark ? "Default" : "Light";
+            ResourceDictionary themeDict = null;
+            if (Application.Current.Resources.ThemeDictionaries.TryGetValue(themeKey, out object tdObj))
+            {
+                themeDict = tdObj as ResourceDictionary;
+            }
+
+            Brush accentBrush = (themeDict != null && themeDict.TryGetValue("AppAccentBrush", out object ab) ? ab as Brush : null)
+                ?? Application.Current.Resources["AppAccentBrush"] as Brush;
+
+            Brush surfaceBrush = (themeDict != null && themeDict.TryGetValue("AppSurfaceBrush", out object sb) ? sb as Brush : null)
+                ?? new SolidColorBrush(isDark ? Color.FromArgb(255, 22, 24, 28) : Color.FromArgb(255, 240, 242, 245));
+
+            Brush borderBrush = (themeDict != null && themeDict.TryGetValue("AppSurfaceBorderBrush", out object bb) ? bb as Brush : null)
+                ?? new SolidColorBrush(isDark ? Color.FromArgb(255, 34, 37, 43) : Color.FromArgb(255, 226, 229, 233));
+
+            Brush textSecBrush = (themeDict != null && themeDict.TryGetValue("AppTextSecondaryBrush", out object tb) ? tb as Brush : null)
+                ?? new SolidColorBrush(isDark ? Color.FromArgb(255, 142, 146, 155) : Color.FromArgb(255, 114, 119, 130));
+
+            Brush whiteBrush = new SolidColorBrush(Colors.White);
 
             SetPillStyle(FilterAllBorder, FilterAllText, _activeFilter == "all", accentBrush, surfaceBrush, borderBrush, whiteBrush, textSecBrush);
             SetPillStyle(FilterTodayBorder, FilterTodayText, _activeFilter == "today", accentBrush, surfaceBrush, borderBrush, whiteBrush, textSecBrush);
@@ -475,6 +493,12 @@ namespace WinAI.Views
         private void DrawerConversations_Click(object sender, RoutedEventArgs e)
         {
             NavDrawer.IsPaneOpen = false;
+        }
+
+        private void DrawerYourImages_Click(object sender, RoutedEventArgs e)
+        {
+            NavDrawer.IsPaneOpen = false;
+            Frame.Navigate(typeof(ImagesGalleryPage));
         }
 
         private void DrawerProviders_Click(object sender, RoutedEventArgs e)

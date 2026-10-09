@@ -432,10 +432,13 @@ namespace WinAI.Views
         #region Voice Recording & Transcription
 
         private DispatcherTimer _voiceBannerTimer;
+        private string _lastVoiceErrorSettingsUri;
 
-        private void ShowHomeVoiceErrorBanner(string message)
+        private void ShowHomeVoiceErrorBanner(string message, string settingsUri = null)
         {
             if (HomeVoiceStatusBanner == null || HomeVoiceStatusBannerText == null) return;
+            _lastVoiceErrorSettingsUri = settingsUri;
+
             HomeVoiceStatusBanner.Background = (Brush)Application.Current.Resources["WinAIErrorBrush"];
             HomeVoiceStatusBannerIcon.Text = "\uE783";
             HomeVoiceStatusBannerText.Text = message;
@@ -443,7 +446,7 @@ namespace WinAI.Views
 
             if (_voiceBannerTimer == null)
             {
-                _voiceBannerTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+                _voiceBannerTimer = new DispatcherTimer();
                 _voiceBannerTimer.Tick += (s, e) =>
                 {
                     _voiceBannerTimer.Stop();
@@ -454,8 +457,34 @@ namespace WinAI.Views
                 };
             }
 
+            _voiceBannerTimer.Interval = !string.IsNullOrEmpty(settingsUri) ? TimeSpan.FromSeconds(6.0) : TimeSpan.FromSeconds(3.5);
             _voiceBannerTimer.Stop();
             _voiceBannerTimer.Start();
+        }
+
+        private async void HomeVoiceStatusBanner_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_lastVoiceErrorSettingsUri))
+            {
+                try
+                {
+                    bool launched = await Windows.System.Launcher.LaunchUriAsync(new Uri(_lastVoiceErrorSettingsUri));
+                    if (!launched && _lastVoiceErrorSettingsUri == "ms-settings:privacy-speech")
+                    {
+                        await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:privacy-speechtyping"));
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:privacy-speechtyping"));
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
         }
 
         private void BindVoiceEvents()
@@ -476,6 +505,8 @@ namespace WinAI.Views
             _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
         }
 
+        private string _existingPromptText = string.Empty;
+
         private async void OnVoiceHypothesisReceived(object sender, string combinedHypothesis)
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -493,6 +524,19 @@ namespace WinAI.Views
                         HomeVoiceHypothesisText.Text = $"\"{combinedHypothesis}\"";
                         HomeVoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextPrimaryBrush"];
                     }
+                }
+
+                if (!string.IsNullOrWhiteSpace(combinedHypothesis) && HomePromptTextBox != null)
+                {
+                    if (string.IsNullOrWhiteSpace(_existingPromptText))
+                    {
+                        HomePromptTextBox.Text = combinedHypothesis;
+                    }
+                    else
+                    {
+                        HomePromptTextBox.Text = $"{_existingPromptText.Trim()} {combinedHypothesis}";
+                    }
+                    HomePromptTextBox.SelectionStart = HomePromptTextBox.Text.Length;
                 }
             });
         }
@@ -523,12 +567,14 @@ namespace WinAI.Views
             if (_isRecognizingVoice) return;
             _isRecognizingVoice = true;
 
+            _existingPromptText = HomePromptTextBox.Text ?? string.Empty;
+
             HomeNormalInputGrid.Visibility = Visibility.Collapsed;
             HomeVoiceRecordingGrid.Visibility = Visibility.Visible;
             _voiceSeconds = 0;
             HomeVoiceRecordingTimerText.Text = "0:00";
             HomeVoiceRecordingStatusText.Text = "Listening...";
-            HomeVoiceHypothesisText.Text = "Speak now...";
+            HomeVoiceHypothesisText.Text = "Speak, then tap ✓ when done";
             HomeVoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
             HomeDoneVoiceRecordingButton.IsEnabled = true;
 
@@ -553,34 +599,38 @@ namespace WinAI.Views
                         HomeVoiceWave3.Height = step == 2 ? 14 : (step == 3 ? 7 : 10);
                         HomeVoiceWave4.Height = step == 3 ? 10 : (step == 0 ? 5 : 8);
                     }
+
+                    // Auto-stop at 45 seconds to avoid runaway recording
+                    if (totalSeconds >= 45)
+                    {
+                        HomeDoneVoiceRecordingButton_Click(null, null);
+                    }
                 };
             }
             _voiceTimer.Start();
 
-            BindVoiceEvents();
-            var startResult = await _voiceService.StartRecordingAsync();
-            if (!startResult.Success)
+            var startResult = await _voiceService.StartAudioRecordingAsync();
+            if (startResult != null && !startResult.Success)
             {
                 _voiceTimer?.Stop();
-                UnbindVoiceEvents();
                 HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
                 HomeNormalInputGrid.Visibility = Visibility.Visible;
                 _isRecognizingVoice = false;
-
-                ShowHomeVoiceErrorBanner(startResult.ErrorMessage);
+                ShowHomeVoiceErrorBanner(startResult.ErrorMessage, startResult.SettingsUri);
             }
         }
 
         private async void HomeCancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
         {
             _voiceTimer?.Stop();
-            UnbindVoiceEvents();
-            await _voiceService.CancelRecordingAsync();
+            await _voiceService.CancelAudioRecordingAsync();
 
             HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
             HomeNormalInputGrid.Visibility = Visibility.Visible;
             _isRecognizingVoice = false;
 
+            HomePromptTextBox.Text = _existingPromptText;
+            HomePromptTextBox.SelectionStart = HomePromptTextBox.Text.Length;
             HomePromptTextBox.Focus(FocusState.Programmatic);
         }
 
@@ -589,11 +639,37 @@ namespace WinAI.Views
             if (!_isRecognizingVoice) return;
 
             _voiceTimer?.Stop();
-            HomeVoiceRecordingStatusText.Text = "Transcribing...";
+            HomeVoiceRecordingStatusText.Text = "Transcribing with AI...";
+            HomeVoiceHypothesisText.Text = "Extracting text...";
             HomeDoneVoiceRecordingButton.IsEnabled = false;
 
-            var result = await _voiceService.StopRecordingAndTranscribeAsync();
-            FinishVoiceRecognition(result);
+            var result = await _voiceService.StopAudioRecordingAndTranscribeAsync(_selectedProviderId, _selectedModelId);
+
+            HomeVoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            HomeNormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+            HomeDoneVoiceRecordingButton.IsEnabled = true;
+
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            {
+                string recognizedText = result.Text.Trim();
+                if (string.IsNullOrWhiteSpace(_existingPromptText))
+                {
+                    HomePromptTextBox.Text = recognizedText;
+                }
+                else
+                {
+                    HomePromptTextBox.Text = $"{_existingPromptText.Trim()} {recognizedText}";
+                }
+
+                HomePromptTextBox.SelectionStart = HomePromptTextBox.Text.Length;
+                HomePromptTextBox.Focus(FocusState.Programmatic);
+            }
+            else if (result != null && !result.Success && result.Error != VoiceRecognitionError.None)
+            {
+                ShowHomeVoiceErrorBanner(result.ErrorMessage, result.SettingsUri);
+                HomePromptTextBox.Focus(FocusState.Programmatic);
+            }
         }
 
         private void FinishVoiceRecognition(VoiceRecognitionResult result)
@@ -606,16 +682,21 @@ namespace WinAI.Views
             _isRecognizingVoice = false;
             HomeDoneVoiceRecordingButton.IsEnabled = true;
 
-            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            string textToInsert = result?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(textToInsert) && !string.IsNullOrWhiteSpace(HomePromptTextBox.Text) && HomePromptTextBox.Text != _existingPromptText)
             {
-                string textToInsert = result.Text.Trim();
-                if (string.IsNullOrWhiteSpace(HomePromptTextBox.Text))
+                textToInsert = HomePromptTextBox.Text.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(textToInsert))
+            {
+                if (string.IsNullOrWhiteSpace(_existingPromptText) || textToInsert.StartsWith(_existingPromptText))
                 {
                     HomePromptTextBox.Text = textToInsert;
                 }
                 else
                 {
-                    HomePromptTextBox.Text = (HomePromptTextBox.Text.Trim() + " " + textToInsert).Trim();
+                    HomePromptTextBox.Text = $"{_existingPromptText.Trim()} {textToInsert}".Trim();
                 }
 
                 HomePromptTextBox.SelectionStart = HomePromptTextBox.Text.Length;
@@ -623,11 +704,19 @@ namespace WinAI.Views
             }
             else if (result != null && !result.Success && !string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
-                ShowHomeVoiceErrorBanner(result.ErrorMessage);
+                if (string.IsNullOrWhiteSpace(HomePromptTextBox.Text))
+                {
+                    HomePromptTextBox.Text = _existingPromptText;
+                }
+                ShowHomeVoiceErrorBanner(result.ErrorMessage, result.SettingsUri);
                 HomePromptTextBox.Focus(FocusState.Programmatic);
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(HomePromptTextBox.Text))
+                {
+                    HomePromptTextBox.Text = _existingPromptText;
+                }
                 ShowHomeVoiceErrorBanner("Could not understand the recording.");
                 HomePromptTextBox.Focus(FocusState.Programmatic);
             }
@@ -760,6 +849,15 @@ namespace WinAI.Views
                 NavDrawer.IsPaneOpen = false;
             }
             Frame.Navigate(typeof(ConversationsPage));
+        }
+
+        private void YourImagesItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (NavDrawer != null)
+            {
+                NavDrawer.IsPaneOpen = false;
+            }
+            Frame.Navigate(typeof(ImagesGalleryPage));
         }
 
         private void AiProvidersItem_Click(object sender, RoutedEventArgs e)

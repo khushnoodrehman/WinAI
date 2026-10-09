@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -57,6 +58,11 @@ namespace WinAI
         private string _pendingImageBase64;
         private string _pendingImageMimeType;
         private string _pendingImageFileName;
+        private StorageFile _pendingStorageFile;
+        private int _oldestLoadedSequence;
+        private int _totalConversationMessageCount;
+        private bool _isLoadingEarlierMessages;
+        private ChatMessage _selectedLightboxMessage;
         private readonly WinAIAttachmentFlyout _attachmentFlyout = new WinAIAttachmentFlyout();
 
         public MainPage()
@@ -103,6 +109,13 @@ namespace WinAI
 
         private void MainPage_BackRequested(object sender, BackRequestedEventArgs e)
         {
+            if (LightboxOverlay != null && LightboxOverlay.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseLightbox();
+                return;
+            }
+
             e.Handled = true;
             if (Frame.CanGoBack)
             {
@@ -273,15 +286,33 @@ namespace WinAI
             var conv = await _conversationService.GetConversationAsync(conversationId);
             if (conv == null) return;
 
+            // Load initial page of messages (most recent 35 messages)
+            const int initialPageSize = 35;
             List<MessageEntity> entities;
-            if (conv.MessageCount > 60)
+            if (conv.MessageCount > initialPageSize)
             {
-                // Large conversation optimization: incrementally load recent messages to guarantee smooth 60fps UI
-                entities = await _conversationService.GetRecentMessagesAsync(conversationId, 60);
+                entities = await _conversationService.GetRecentMessagesAsync(conversationId, initialPageSize);
             }
             else
             {
                 entities = await _conversationService.GetMessagesAsync(conversationId);
+            }
+
+            _totalConversationMessageCount = conv.MessageCount;
+            _oldestLoadedSequence = (entities != null && entities.Count > 0) ? entities.Min(e => e.Sequence) : 0;
+
+            // Fetch attachments for conversation
+            var convAttachments = await _conversationService.GetAttachmentsForConversationAsync(conversationId);
+            var attLookup = new Dictionary<string, AttachmentEntity>();
+            if (convAttachments != null)
+            {
+                foreach (var a in convAttachments)
+                {
+                    if (!string.IsNullOrEmpty(a.MessageId) && !attLookup.ContainsKey(a.MessageId))
+                    {
+                        attLookup[a.MessageId] = a;
+                    }
+                }
             }
 
             _currentSession = new ChatSession
@@ -321,10 +352,23 @@ namespace WinAI
                         Timestamp = entity.LocalCreatedAt
                     };
 
+                    if (attLookup.TryGetValue(entity.Id, out var att) && att != null)
+                    {
+                        chatMsg.AttachmentId = att.Id;
+                        chatMsg.LocalFileName = att.LocalFileName;
+                        chatMsg.ThumbnailFileName = att.ThumbnailFileName;
+                        chatMsg.OriginalFileName = att.OriginalFileName;
+                        chatMsg.ImageWidth = att.ImageWidth;
+                        chatMsg.ImageHeight = att.ImageHeight;
+                        chatMsg.FileSizeBytes = att.FileSizeBytes;
+                    }
+
                     Messages.Add(chatMsg);
                     _currentSession.Messages.Add(chatMsg);
                 }
             }
+
+            UpdateLoadEarlierBanner();
 
             // Select the model previously remembered for this conversation
             if (!string.IsNullOrWhiteSpace(conv.ModelId))
@@ -333,6 +377,116 @@ namespace WinAI
             }
 
             ScrollToLatestMessage();
+        }
+
+        private void UpdateLoadEarlierBanner()
+        {
+            if (LoadEarlierMessagesBanner == null || LoadEarlierMessagesText == null) return;
+
+            int remaining = _oldestLoadedSequence - 1;
+            if (remaining > 0)
+            {
+                LoadEarlierMessagesBanner.Visibility = Visibility.Visible;
+                LoadEarlierMessagesText.Text = $"Load earlier messages ({remaining} remaining)";
+            }
+            else
+            {
+                LoadEarlierMessagesBanner.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void LoadEarlierMessagesButton_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadEarlierMessagesAsync();
+        }
+
+        private async Task LoadEarlierMessagesAsync()
+        {
+            if (_isLoadingEarlierMessages || _currentSession == null || _oldestLoadedSequence <= 1) return;
+
+            _isLoadingEarlierMessages = true;
+            if (LoadingEarlierRing != null)
+            {
+                LoadingEarlierRing.IsActive = true;
+                LoadingEarlierRing.Visibility = Visibility.Visible;
+            }
+
+            try
+            {
+                const int pageSize = 30;
+                var olderEntities = await _conversationService.GetMessagesBeforeSequenceAsync(
+                    _currentSession.Id, _oldestLoadedSequence, pageSize);
+
+                if (olderEntities != null && olderEntities.Count > 0)
+                {
+                    var convAttachments = await _conversationService.GetAttachmentsForConversationAsync(_currentSession.Id);
+                    var attLookup = new Dictionary<string, AttachmentEntity>();
+                    if (convAttachments != null)
+                    {
+                        foreach (var a in convAttachments)
+                        {
+                            if (!string.IsNullOrEmpty(a.MessageId) && !attLookup.ContainsKey(a.MessageId))
+                            {
+                                attLookup[a.MessageId] = a;
+                            }
+                        }
+                    }
+
+                    _oldestLoadedSequence = olderEntities.Min(e => e.Sequence);
+                    var previousTopItem = Messages.Count > 0 ? Messages[0] : null;
+
+                    for (int i = 0; i < olderEntities.Count; i++)
+                    {
+                        var entity = olderEntities[i];
+                        bool isUser = entity.Role == MessageRole.User;
+                        string sender = isUser ? "You" : (entity.ModelId ?? "Assistant");
+
+                        var chatMsg = new ChatMessage(entity.Content, isUser, sender, entity.ProviderId, entity.ModelId)
+                        {
+                            Id = entity.Id,
+                            Timestamp = entity.LocalCreatedAt
+                        };
+
+                        if (attLookup.TryGetValue(entity.Id, out var att) && att != null)
+                        {
+                            chatMsg.AttachmentId = att.Id;
+                            chatMsg.LocalFileName = att.LocalFileName;
+                            chatMsg.ThumbnailFileName = att.ThumbnailFileName;
+                            chatMsg.OriginalFileName = att.OriginalFileName;
+                            chatMsg.ImageWidth = att.ImageWidth;
+                            chatMsg.ImageHeight = att.ImageHeight;
+                            chatMsg.FileSizeBytes = att.FileSizeBytes;
+                        }
+
+                        Messages.Insert(i, chatMsg);
+                        _currentSession.Messages.Insert(i, chatMsg);
+                    }
+
+                    if (previousTopItem != null && ChatListView != null)
+                    {
+                        ChatListView.ScrollIntoView(previousTopItem, ScrollIntoViewAlignment.Leading);
+                    }
+                }
+                else
+                {
+                    _oldestLoadedSequence = 1;
+                }
+
+                UpdateLoadEarlierBanner();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MainPage] Load earlier messages error: {ex.Message}");
+            }
+            finally
+            {
+                _isLoadingEarlierMessages = false;
+                if (LoadingEarlierRing != null)
+                {
+                    LoadingEarlierRing.IsActive = false;
+                    LoadingEarlierRing.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
         private void HandleNavigationParameter(string parameter)
@@ -944,6 +1098,7 @@ namespace WinAI
             string sendingText = text;
             string sendingImageBase64 = _pendingImageBase64;
             string sendingImageMime = _pendingImageMimeType;
+            StorageFile sendingStorageFile = _pendingStorageFile;
 
             // 4. Clear input, clear attachment & lock controls immediately to prevent duplicates
             InputTextBox.Text = string.Empty;
@@ -963,14 +1118,43 @@ namespace WinAI
             _currentSession.Messages.Add(userMsg);
 
             // 6. PERSIST USER MESSAGE LOCALLY IN SQLITE IMMEDIATELY
-            // If the provider request fails or app closes, this user message is durable!
+            // Save attachment to durable storage under LocalFolder/Media/Images
+            List<AttachmentEntity> attachments = null;
+            if (sendingStorageFile != null)
+            {
+                try
+                {
+                    var attEntity = await ImageStorageService.Instance.SaveAttachmentAsync(
+                        sendingStorageFile,
+                        _currentSession.Id,
+                        userMsg.Id
+                    );
+                    if (attEntity != null)
+                    {
+                        attachments = new List<AttachmentEntity> { attEntity };
+                        userMsg.AttachmentId = attEntity.Id;
+                        userMsg.LocalFileName = attEntity.LocalFileName;
+                        userMsg.ThumbnailFileName = attEntity.ThumbnailFileName;
+                        userMsg.OriginalFileName = attEntity.OriginalFileName;
+                        userMsg.ImageWidth = attEntity.ImageWidth;
+                        userMsg.ImageHeight = attEntity.ImageHeight;
+                        userMsg.FileSizeBytes = attEntity.FileSizeBytes;
+                    }
+                }
+                catch (Exception attEx)
+                {
+                    Debug.WriteLine($"[MainPage] Save attachment error: {attEx.Message}");
+                }
+            }
+
             try
             {
                 var userEntity = await _conversationService.AddUserMessageAsync(
                     conversationId: _currentSession.Id,
                     content: sendingText,
                     providerId: requestProviderId,
-                    modelId: requestModelId
+                    modelId: requestModelId,
+                    attachments: attachments
                 );
 
                 if (userEntity != null)
@@ -1166,6 +1350,7 @@ namespace WinAI
             _pendingImageBase64 = result.Base64Data;
             _pendingImageMimeType = result.MimeType;
             _pendingImageFileName = result.FileName;
+            _pendingStorageFile = result.File;
             if (AttachmentThumbnailImage != null) AttachmentThumbnailImage.Source = result.Thumbnail;
             if (AttachmentFileNameText != null) AttachmentFileNameText.Text = result.FileName;
             if (AttachmentPreviewBar != null) AttachmentPreviewBar.Visibility = Visibility.Visible;
@@ -1193,16 +1378,196 @@ namespace WinAI
             _pendingImageBase64 = null;
             _pendingImageMimeType = null;
             _pendingImageFileName = null;
+            _pendingStorageFile = null;
             if (AttachmentThumbnailImage != null) AttachmentThumbnailImage.Source = null;
             if (AttachmentPreviewBar != null) AttachmentPreviewBar.Visibility = Visibility.Collapsed;
             UpdateSendButtonState();
         }
 
-        private DispatcherTimer _voiceBannerTimer;
+        #region Full-Size Lightbox Image Viewer
 
-        private void ShowVoiceErrorBanner(string message)
+        private async void MessageImage_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.Tag is ChatMessage msg && msg.HasImage)
+            {
+                await OpenLightboxAsync(msg);
+            }
+        }
+
+        private async Task OpenLightboxAsync(ChatMessage msg)
+        {
+            if (LightboxOverlay == null || msg == null) return;
+
+            _selectedLightboxMessage = msg;
+            LightboxTitleText.Text = string.IsNullOrWhiteSpace(msg.OriginalFileName) ? "Image Attachment" : msg.OriginalFileName;
+            LightboxSubtitleText.Text = (msg.ImageWidth > 0 && msg.ImageHeight > 0)
+                ? $"{msg.ImageWidth}x{msg.ImageHeight} • {msg.FormattedTime}"
+                : msg.FormattedTime;
+
+            LightboxLoadingRing.IsActive = true;
+            LightboxLoadingRing.Visibility = Visibility.Visible;
+            LightboxImage.Source = null;
+            LightboxScrollViewer.ChangeView(0, 0, 1.0f);
+            if (ZoomLevelText != null) ZoomLevelText.Text = "100%";
+
+            LightboxOverlay.Visibility = Visibility.Visible;
+
+            if (LightboxScrollViewer.ActualWidth > 0 && LightboxScrollViewer.ActualHeight > 0 && LightboxImageContainer != null)
+            {
+                LightboxImageContainer.Width = LightboxScrollViewer.ActualWidth;
+                LightboxImageContainer.Height = LightboxScrollViewer.ActualHeight;
+            }
+
+            try
+            {
+                if (!string.IsNullOrEmpty(msg.LocalFileName))
+                {
+                    var file = await ImageStorageService.Instance.GetImageFileAsync(msg.LocalFileName);
+                    if (file != null)
+                    {
+                        using (var stream = await file.OpenReadAsync())
+                        {
+                            var bmp = new BitmapImage();
+                            await bmp.SetSourceAsync(stream);
+                            LightboxImage.Source = bmp;
+                            return;
+                        }
+                    }
+                }
+
+                // Fallback to in-memory ImageSource
+                if (msg.ImageSource != null)
+                {
+                    LightboxImage.Source = msg.ImageSource;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MainPage] Open lightbox error: {ex.Message}");
+            }
+            finally
+            {
+                LightboxLoadingRing.IsActive = false;
+                LightboxLoadingRing.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LightboxScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.NewSize.Width > 0 && e.NewSize.Height > 0 && LightboxImageContainer != null)
+            {
+                LightboxImageContainer.Width = e.NewSize.Width;
+                LightboxImageContainer.Height = e.NewSize.Height;
+            }
+        }
+
+        private void LightboxScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            if (ZoomLevelText != null && LightboxScrollViewer != null)
+            {
+                ZoomLevelText.Text = $"{(int)(LightboxScrollViewer.ZoomFactor * 100)}%";
+            }
+        }
+
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            if (LightboxScrollViewer == null) return;
+            float target = Math.Min(LightboxScrollViewer.ZoomFactor + 0.35f, 4.0f);
+            LightboxScrollViewer.ChangeView(null, null, target);
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            if (LightboxScrollViewer == null) return;
+            float target = Math.Max(LightboxScrollViewer.ZoomFactor - 0.35f, 1.0f);
+            LightboxScrollViewer.ChangeView(null, null, target);
+        }
+
+        private void ZoomReset_Click(object sender, RoutedEventArgs e)
+        {
+            if (LightboxScrollViewer == null) return;
+            LightboxScrollViewer.ChangeView(0, 0, 1.0f);
+        }
+
+        private void LightboxImageContainer_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (LightboxScrollViewer == null) return;
+            float target = LightboxScrollViewer.ZoomFactor > 1.2f ? 1.0f : 2.5f;
+            LightboxScrollViewer.ChangeView(null, null, target);
+        }
+
+        private void CloseLightbox_Click(object sender, RoutedEventArgs e)
+        {
+            CloseLightbox();
+        }
+
+        private void CloseLightbox()
+        {
+            if (LightboxOverlay != null) LightboxOverlay.Visibility = Visibility.Collapsed;
+            if (LightboxImage != null) LightboxImage.Source = null;
+            if (LightboxScrollViewer != null) LightboxScrollViewer.ChangeView(0, 0, 1.0f);
+            if (ZoomLevelText != null) ZoomLevelText.Text = "100%";
+            _selectedLightboxMessage = null;
+        }
+
+        private void LightboxImage_ImageOpened(object sender, RoutedEventArgs e)
+        {
+            if (LightboxLoadingRing != null)
+            {
+                LightboxLoadingRing.IsActive = false;
+                LightboxLoadingRing.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LightboxImage_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            if (LightboxLoadingRing != null)
+            {
+                LightboxLoadingRing.IsActive = false;
+                LightboxLoadingRing.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void SaveLightboxImage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedLightboxMessage == null) return;
+
+            try
+            {
+                if (!string.IsNullOrEmpty(_selectedLightboxMessage.LocalFileName))
+                {
+                    var file = await ImageStorageService.Instance.GetImageFileAsync(_selectedLightboxMessage.LocalFileName);
+                    if (file != null)
+                    {
+                        var picturesFolder = KnownFolders.PicturesLibrary;
+                        string targetName = !string.IsNullOrWhiteSpace(_selectedLightboxMessage.OriginalFileName)
+                            ? _selectedLightboxMessage.OriginalFileName
+                            : _selectedLightboxMessage.LocalFileName;
+
+                        await file.CopyAsync(picturesFolder, targetName, NameCollisionOption.GenerateUniqueName);
+                        ShowVoiceErrorBanner("Saved to Pictures Library!");
+                        return;
+                    }
+                }
+
+                ShowVoiceErrorBanner("Image file not available.");
+            }
+            catch (Exception ex)
+            {
+                ShowVoiceErrorBanner($"Save failed: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        private DispatcherTimer _voiceBannerTimer;
+        private string _lastVoiceErrorSettingsUri;
+
+        private void ShowVoiceErrorBanner(string message, string settingsUri = null)
         {
             if (VoiceStatusBanner == null || VoiceStatusBannerText == null) return;
+            _lastVoiceErrorSettingsUri = settingsUri;
+
             VoiceStatusBanner.Background = (Brush)Application.Current.Resources["WinAIErrorBrush"];
             VoiceStatusBannerIcon.Text = "\uE783";
             VoiceStatusBannerText.Text = message;
@@ -1210,7 +1575,7 @@ namespace WinAI
 
             if (_voiceBannerTimer == null)
             {
-                _voiceBannerTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+                _voiceBannerTimer = new DispatcherTimer();
                 _voiceBannerTimer.Tick += (s, e) =>
                 {
                     _voiceBannerTimer.Stop();
@@ -1221,8 +1586,34 @@ namespace WinAI
                 };
             }
 
+            _voiceBannerTimer.Interval = !string.IsNullOrEmpty(settingsUri) ? TimeSpan.FromSeconds(6.0) : TimeSpan.FromSeconds(3.5);
             _voiceBannerTimer.Stop();
             _voiceBannerTimer.Start();
+        }
+
+        private async void VoiceStatusBanner_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_lastVoiceErrorSettingsUri))
+            {
+                try
+                {
+                    bool launched = await Windows.System.Launcher.LaunchUriAsync(new Uri(_lastVoiceErrorSettingsUri));
+                    if (!launched && _lastVoiceErrorSettingsUri == "ms-settings:privacy-speech")
+                    {
+                        await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:privacy-speechtyping"));
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:privacy-speechtyping"));
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
         }
 
         private void BindVoiceEvents()
@@ -1243,6 +1634,8 @@ namespace WinAI
             _voiceService.SessionCompleted -= OnVoiceSessionCompleted;
         }
 
+        private string _existingChatInputText = string.Empty;
+
         private async void OnVoiceHypothesisReceived(object sender, string combinedHypothesis)
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -1260,6 +1653,20 @@ namespace WinAI
                         VoiceHypothesisText.Text = $"\"{combinedHypothesis}\"";
                         VoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextPrimaryBrush"];
                     }
+                }
+
+                if (!string.IsNullOrWhiteSpace(combinedHypothesis) && InputTextBox != null)
+                {
+                    if (string.IsNullOrWhiteSpace(_existingChatInputText))
+                    {
+                        InputTextBox.Text = combinedHypothesis;
+                    }
+                    else
+                    {
+                        InputTextBox.Text = $"{_existingChatInputText.Trim()} {combinedHypothesis}";
+                    }
+                    InputTextBox.SelectionStart = InputTextBox.Text.Length;
+                    UpdateSendButtonState();
                 }
             });
         }
@@ -1290,12 +1697,14 @@ namespace WinAI
             if (_isRecognizingVoice) return;
             _isRecognizingVoice = true;
 
+            _existingChatInputText = InputTextBox.Text ?? string.Empty;
+
             NormalInputGrid.Visibility = Visibility.Collapsed;
             VoiceRecordingGrid.Visibility = Visibility.Visible;
             _voiceSeconds = 0;
             VoiceRecordingTimerText.Text = "0:00";
             VoiceRecordingStatusText.Text = "Listening...";
-            VoiceHypothesisText.Text = "Speak now...";
+            VoiceHypothesisText.Text = "Speak, then tap ✓ when done";
             VoiceHypothesisText.Foreground = (Brush)Application.Current.Resources["AppTextSecondaryBrush"];
             DoneVoiceRecordingButton.IsEnabled = true;
 
@@ -1320,35 +1729,40 @@ namespace WinAI
                         VoiceWave3.Height = step == 2 ? 14 : (step == 3 ? 7 : 10);
                         VoiceWave4.Height = step == 3 ? 10 : (step == 0 ? 5 : 8);
                     }
+
+                    // Auto-stop at 45 seconds to avoid runaway recording
+                    if (totalSeconds >= 45)
+                    {
+                        DoneVoiceRecordingButton_Click(null, null);
+                    }
                 };
             }
             _voiceTimer.Start();
 
-            BindVoiceEvents();
-            var startResult = await _voiceService.StartRecordingAsync();
-            if (!startResult.Success)
+            var startResult = await _voiceService.StartAudioRecordingAsync();
+            if (startResult != null && !startResult.Success)
             {
                 _voiceTimer?.Stop();
-                UnbindVoiceEvents();
                 VoiceRecordingGrid.Visibility = Visibility.Collapsed;
                 NormalInputGrid.Visibility = Visibility.Visible;
                 _isRecognizingVoice = false;
-
-                ShowVoiceErrorBanner(startResult.ErrorMessage);
+                ShowVoiceErrorBanner(startResult.ErrorMessage, startResult.SettingsUri);
             }
         }
 
         private async void CancelVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
         {
             _voiceTimer?.Stop();
-            UnbindVoiceEvents();
-            await _voiceService.CancelRecordingAsync();
+            await _voiceService.CancelAudioRecordingAsync();
 
             VoiceRecordingGrid.Visibility = Visibility.Collapsed;
             NormalInputGrid.Visibility = Visibility.Visible;
             _isRecognizingVoice = false;
 
+            InputTextBox.Text = _existingChatInputText;
+            InputTextBox.SelectionStart = InputTextBox.Text.Length;
             InputTextBox.Focus(FocusState.Programmatic);
+            UpdateSendButtonState();
         }
 
         private async void DoneVoiceRecordingButton_Click(object sender, RoutedEventArgs e)
@@ -1356,11 +1770,38 @@ namespace WinAI
             if (!_isRecognizingVoice) return;
 
             _voiceTimer?.Stop();
-            VoiceRecordingStatusText.Text = "Transcribing...";
+            VoiceRecordingStatusText.Text = "Transcribing with AI...";
+            VoiceHypothesisText.Text = "Extracting text...";
             DoneVoiceRecordingButton.IsEnabled = false;
 
-            var result = await _voiceService.StopRecordingAndTranscribeAsync();
-            FinishVoiceRecognition(result);
+            var result = await _voiceService.StopAudioRecordingAndTranscribeAsync(_currentProviderId, _selectedModel?.Id ?? _currentModelId);
+
+            VoiceRecordingGrid.Visibility = Visibility.Collapsed;
+            NormalInputGrid.Visibility = Visibility.Visible;
+            _isRecognizingVoice = false;
+            DoneVoiceRecordingButton.IsEnabled = true;
+
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            {
+                string recognizedText = result.Text.Trim();
+                if (string.IsNullOrWhiteSpace(_existingChatInputText))
+                {
+                    InputTextBox.Text = recognizedText;
+                }
+                else
+                {
+                    InputTextBox.Text = $"{_existingChatInputText.Trim()} {recognizedText}";
+                }
+
+                InputTextBox.SelectionStart = InputTextBox.Text.Length;
+                InputTextBox.Focus(FocusState.Programmatic);
+                UpdateSendButtonState();
+            }
+            else if (result != null && !result.Success && result.Error != VoiceRecognitionError.None)
+            {
+                ShowVoiceErrorBanner(result.ErrorMessage, result.SettingsUri);
+                InputTextBox.Focus(FocusState.Programmatic);
+            }
         }
 
         private void FinishVoiceRecognition(VoiceRecognitionResult result)
@@ -1373,16 +1814,21 @@ namespace WinAI
             _isRecognizingVoice = false;
             DoneVoiceRecordingButton.IsEnabled = true;
 
-            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Text))
+            string textToInsert = result?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(textToInsert) && !string.IsNullOrWhiteSpace(InputTextBox.Text) && InputTextBox.Text != _existingChatInputText)
             {
-                string textToInsert = result.Text.Trim();
-                if (string.IsNullOrWhiteSpace(InputTextBox.Text))
+                textToInsert = InputTextBox.Text.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(textToInsert))
+            {
+                if (string.IsNullOrWhiteSpace(_existingChatInputText) || textToInsert.StartsWith(_existingChatInputText))
                 {
                     InputTextBox.Text = textToInsert;
                 }
                 else
                 {
-                    InputTextBox.Text = (InputTextBox.Text.Trim() + " " + textToInsert).Trim();
+                    InputTextBox.Text = $"{_existingChatInputText.Trim()} {textToInsert}".Trim();
                 }
 
                 InputTextBox.SelectionStart = InputTextBox.Text.Length;
@@ -1391,11 +1837,19 @@ namespace WinAI
             }
             else if (result != null && !result.Success && !string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
-                ShowVoiceErrorBanner(result.ErrorMessage);
+                if (string.IsNullOrWhiteSpace(InputTextBox.Text))
+                {
+                    InputTextBox.Text = _existingChatInputText;
+                }
+                ShowVoiceErrorBanner(result.ErrorMessage, result.SettingsUri);
                 InputTextBox.Focus(FocusState.Programmatic);
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(InputTextBox.Text))
+                {
+                    InputTextBox.Text = _existingChatInputText;
+                }
                 ShowVoiceErrorBanner("Could not understand the recording.");
                 InputTextBox.Focus(FocusState.Programmatic);
             }
